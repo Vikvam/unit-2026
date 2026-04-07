@@ -30,7 +30,10 @@ sealed class ClientMessage {
 
     @Serializable
     @SerialName("sessionResume")
-    data object SessionResume : ClientMessage()
+    data class SessionResume(
+        /** targetEndAtMs extended by the pause duration so no focus time is lost. */
+        val extendedTargetEndAtMs: Long,
+    ) : ClientMessage()
 }
 
 // ── Server → Client ──────────────────────────────────────────────────────────

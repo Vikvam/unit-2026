@@ -136,9 +136,10 @@ class KtorTrackingClient(
 
     override suspend fun resumeSession() {
         val current = _sessionState.value ?: return
-        if (current.pausedAtMs == null) return
-        _sessionState.value = current.copy(pausedAtMs = null)
-        sendMessage(ClientMessage.SessionResume)
+        val pausedAt = current.pausedAtMs ?: return
+        val extendedTargetEndAtMs = current.targetEndAtMs + (currentTimeMs() - pausedAt)
+        _sessionState.value = current.copy(pausedAtMs = null, targetEndAtMs = extendedTargetEndAtMs)
+        sendMessage(ClientMessage.SessionResume(extendedTargetEndAtMs))
     }
 
     override fun disconnect() {
@@ -196,8 +197,10 @@ class KtorTrackingClient(
         val now = currentTimeMs()
         if (session != null && session.targetEndAtMs > now) {
             _sessionState.value = session
+        } else {
+            // Server has no active session — always enforce this so all clients stay in sync.
+            _sessionState.value = null
         }
-        // Don't null out local state from a SessionState broadcast — only adopt active sessions.
     }
 
     private suspend fun sendMessage(message: ClientMessage) {
