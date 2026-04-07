@@ -122,8 +122,8 @@ class KtorTrackingClient(
     }
 
     override suspend fun stopSession() {
-        val current = _sessionState.value ?: return
-        _sessionState.value = current.copy(stoppedAtMs = currentTimeMs())
+        if (_sessionState.value == null) return
+        _sessionState.value = null
         sendMessage(ClientMessage.SessionStop)
     }
 
@@ -154,8 +154,8 @@ class KtorTrackingClient(
         }
         when (message) {
             is ServerMessage.SessionStarted  -> _sessionState.value = message.session
-            // Preserve the stopped session so the Report screen can display it.
-            is ServerMessage.SessionStopped  -> _sessionState.value = message.session
+            // Null out on stop so the timer resets to Idle; history is kept in FocusSessionState.
+            is ServerMessage.SessionStopped  -> _sessionState.value = null
             is ServerMessage.SessionPaused   -> _sessionState.value = message.session
             is ServerMessage.SessionResumed  -> _sessionState.value = message.session
             is ServerMessage.SessionState    -> applyServerState(message.session)

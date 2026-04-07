@@ -35,7 +35,7 @@ object FocusSessionState {
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var enforcer: BlockingEnforcer? = null
-    private var timerJob: Job? = null
+    @Volatile private var timerJob: Job? = null
     private var storage: AppStorage = NoOpAppStorage
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -240,8 +240,10 @@ object FocusSessionState {
 
         if (!isActive) {
             if (_isRunning.value && sessionStartMs > 0L) {
-                // completed = ended naturally (no stoppedAtMs); false = manually stopped
-                saveSession(completed = session != null && session.stoppedAtMs == null)
+                // session == null → client cleared it after manual stop → not completed
+                // session.stoppedAtMs != null → manually stopped → not completed
+                // session.targetEndAtMs <= now → natural expiry (but handled by countdown job)
+                saveSession(completed = false)
             }
             _isRunning.value = false
             _isPaused.value = false
@@ -287,7 +289,16 @@ object FocusSessionState {
                 while (true) {
                     val remaining = (targetEndAtMs - System.currentTimeMillis()) / 1000
                     _remainingSeconds.value = remaining.coerceAtLeast(0L)
-                    if (remaining <= 0L) break
+                    if (remaining <= 0L) {
+                        // Natural expiry — save history and reset blocking state
+                        if (sessionStartMs > 0L) saveSession(completed = true)
+                        sessionStartMs = 0L
+                        _isRunning.value = false
+                        _isPaused.value = false
+                        enforcer?.unblock()
+                        _blockedApp.value = null
+                        break
+                    }
                     delay(1000L)
                 }
             }

@@ -3,6 +3,7 @@ package cz.aaa.unit2026.ui.timer
 import cz.aaa.unit2026.tracking.TrackingClient
 import cz.aaa.unit2026.tracking.TrackingSession
 import cz.aaa.unit2026.ui.components.TimerState
+import cz.aaa.unit2026.ui.theme.SessionSettings
 import cz.aaa.unit2026.util.currentTimeMs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -26,9 +27,19 @@ class TimerStateHolder(
     private val _uiState = MutableStateFlow(TimerUiState())
     val uiState: StateFlow<TimerUiState> = _uiState.asStateFlow()
 
+    private var lastSessionId: String? = null
+
     init {
         scope.launch {
             client.sessionState.collect { session ->
+                if (session != null && session.sessionId != lastSessionId) {
+                    // New session adopted — sync duration slider to match the actual session length
+                    lastSessionId = session.sessionId
+                    val durationMs = session.targetEndAtMs - session.startedAtMs
+                    SessionSettings.setDuration((durationMs / 60_000L).toInt().coerceIn(1, 180))
+                } else if (session == null) {
+                    lastSessionId = null
+                }
                 _uiState.update { current ->
                     if (session == null) {
                         TimerUiState(isConnected = current.isConnected)

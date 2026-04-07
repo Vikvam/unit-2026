@@ -33,8 +33,8 @@ class OfflineTrackingClient : TrackingClient {
     }
 
     override suspend fun stopSession() {
-        val current = _sessionState.value ?: return
-        _sessionState.value = current.copy(stoppedAtMs = currentTimeMs())
+        if (_sessionState.value == null) return
+        _sessionState.value = null
     }
 
     override suspend fun pauseSession() {
