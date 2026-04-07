@@ -1,9 +1,18 @@
 package cz.aaa.unit2026.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import cz.aaa.unit2026.LocalTimerStateHolder
@@ -76,88 +88,120 @@ fun TimerScreen(modifier: Modifier = Modifier) {
         label = "ringScale",
     )
 
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        TimerRing(
-            progress = uiState.progress,
-            state = uiState.timerState,
-            label = uiState.label,
-            subtitle = if (canConfigure) stringResource(Res.string.timer_tap_hint) else null,
-            modifier = Modifier
-                .scale(scale)
-                .pointerInput(canConfigure) {
-                    if (canConfigure) {
-                        detectTapGestures(
-                            onPress = {
-                                pressed = true
-                                tryAwaitRelease()
-                                pressed = false
-                            },
-                            onTap = { showSessionParams = true },
-                        )
-                    }
-                },
-        )
+    // Ambient background gradient color that shifts with state
+    val ambientColor by animateColorAsState(
+        targetValue = when (uiState.timerState) {
+            TimerState.Running -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            TimerState.Paused -> OpenJetTracksTheme.focus.warning.copy(alpha = 0.06f)
+            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
+        },
+        animationSpec = tween(1200),
+        label = "ambientColor",
+    )
 
-        if (isRunning) {
-            Spacer(Modifier.height(spacing.md))
-
-            Text(
-                text = if (isStrictMode) stringResource(Res.string.timer_strict_on)
-                       else stringResource(Res.string.timer_strict_off),
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isStrictMode) OpenJetTracksTheme.focus.active
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+    Box(modifier = modifier.fillMaxSize()) {
+        // Ambient radial gradient background
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawRect(
+                brush = Brush.radialGradient(
+                    colors = listOf(ambientColor, Color.Transparent),
+                    center = Offset(size.width / 2, size.height * 0.38f),
+                    radius = size.width * 0.8f,
+                ),
             )
         }
 
-        Spacer(Modifier.height(spacing.xl))
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            TimerRing(
+                progress = uiState.progress,
+                state = uiState.timerState,
+                label = uiState.label,
+                subtitle = if (canConfigure) stringResource(Res.string.timer_tap_hint) else null,
+                modifier = Modifier
+                    .scale(scale)
+                    .pointerInput(canConfigure) {
+                        if (canConfigure) {
+                            detectTapGestures(
+                                onPress = {
+                                    pressed = true
+                                    tryAwaitRelease()
+                                    pressed = false
+                                },
+                                onTap = { showSessionParams = true },
+                            )
+                        }
+                    },
+            )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            if (!isRunning) {
-                Button(
-                    onClick = {
-                        stateHolder.onStart(durationMinutes * 60L * 1_000L)
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier.height(48.dp).width(120.dp),
-                ) {
-                    Text(stringResource(Res.string.timer_start))
-                }
-            } else {
-                Button(
-                    onClick = {
-                        if (isPaused) stateHolder.onResume() else stateHolder.onPause()
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = if (isPaused) {
-                        ButtonDefaults.buttonColors()
+            // Strict mode badge
+            if (isRunning) {
+                Spacer(Modifier.height(spacing.md))
+                Text(
+                    text = if (isStrictMode) stringResource(Res.string.timer_strict_on)
+                           else stringResource(Res.string.timer_strict_off),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isStrictMode) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Spacer(Modifier.height(spacing.xl))
+
+            // Animated button transitions
+            AnimatedContent(
+                targetState = isRunning,
+                transitionSpec = {
+                    (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.9f))
+                        .togetherWith(fadeOut(tween(200)) + scaleOut(tween(200), targetScale = 0.9f))
+                },
+                label = "buttons",
+            ) { running ->
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                    if (!running) {
+                        Button(
+                            onClick = {
+                                stateHolder.onStart(durationMinutes * 60L * 1_000L)
+                            },
+                            shape = RoundedCornerShape(24.dp),
+                            modifier = Modifier.height(48.dp).width(120.dp),
+                        ) {
+                            Text(stringResource(Res.string.timer_start))
+                        }
                     } else {
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    },
-                    modifier = Modifier.height(48.dp).width(120.dp),
-                ) {
-                    Text(
-                        if (isPaused) stringResource(Res.string.timer_resume)
-                        else stringResource(Res.string.timer_pause)
-                    )
-                }
+                        Button(
+                            onClick = {
+                                if (isPaused) stateHolder.onResume() else stateHolder.onPause()
+                            },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = if (isPaused) ButtonDefaults.buttonColors()
+                            else ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                            modifier = Modifier.height(48.dp).width(120.dp),
+                        ) {
+                            Text(
+                                if (isPaused) stringResource(Res.string.timer_resume)
+                                else stringResource(Res.string.timer_pause),
+                            )
+                        }
 
-                OutlinedButton(
-                    onClick = { stateHolder.onStop() },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
-                    modifier = Modifier.height(48.dp).width(120.dp),
-                ) {
-                    Text(stringResource(Res.string.timer_stop))
+                        OutlinedButton(
+                            onClick = { stateHolder.onStop() },
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                contentColor = MaterialTheme.colorScheme.error,
+                            ),
+                            modifier = Modifier.height(48.dp).width(120.dp),
+                        ) {
+                            Text(stringResource(Res.string.timer_stop))
+                        }
+                    }
                 }
             }
         }

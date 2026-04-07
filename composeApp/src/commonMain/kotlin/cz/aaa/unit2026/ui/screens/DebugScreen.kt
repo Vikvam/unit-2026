@@ -32,7 +32,7 @@ fun DebugScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
         item {
-            Text("Debug", style = MaterialTheme.typography.headlineMedium)
+            Text("Debug", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         }
 
         // Session status

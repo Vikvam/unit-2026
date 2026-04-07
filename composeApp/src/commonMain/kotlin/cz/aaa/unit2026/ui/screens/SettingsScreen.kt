@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +53,9 @@ import cz.aaa.unit2026.getPlatform
 import cz.aaa.unit2026.monitoring.AppCategory
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.theme.AppLocale
+import cz.aaa.unit2026.ui.theme.BackgroundTheme
+import cz.aaa.unit2026.ui.theme.BackgroundThemeState
+import cz.aaa.unit2026.ui.theme.ColorTheme
 import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 import cz.aaa.unit2026.ui.theme.ThemeMode
@@ -59,12 +64,26 @@ import cz.aaa.unit2026.ui.util.decodeImageBitmap
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.bg_forest
+import unit2026.composeapp.generated.resources.bg_minimal
+import unit2026.composeapp.generated.resources.bg_ocean
+import unit2026.composeapp.generated.resources.bg_stars
+import unit2026.composeapp.generated.resources.color_amber
+import unit2026.composeapp.generated.resources.color_lavender
+import unit2026.composeapp.generated.resources.color_ocean
+import unit2026.composeapp.generated.resources.color_rose
+import unit2026.composeapp.generated.resources.color_sage
+import unit2026.composeapp.generated.resources.color_slate
+import unit2026.composeapp.generated.resources.settings_background
+import unit2026.composeapp.generated.resources.settings_background_desc
 import unit2026.composeapp.generated.resources.settings_blocked_apps
 import unit2026.composeapp.generated.resources.settings_blocked_apps_count
 import unit2026.composeapp.generated.resources.settings_blocked_apps_desc
 import unit2026.composeapp.generated.resources.settings_blocked_apps_empty
 import unit2026.composeapp.generated.resources.settings_blocked_apps_in_category
 import unit2026.composeapp.generated.resources.settings_blocked_apps_search
+import unit2026.composeapp.generated.resources.settings_color_theme
+import unit2026.composeapp.generated.resources.settings_color_theme_desc
 import unit2026.composeapp.generated.resources.settings_language
 import unit2026.composeapp.generated.resources.settings_language_desc
 import unit2026.composeapp.generated.resources.settings_theme
@@ -81,11 +100,23 @@ private val ThemeMode.labelRes: StringResource
         ThemeMode.Dark -> Res.string.theme_dark
     }
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val ColorTheme.labelRes: StringResource
+    get() = when (this) {
+        ColorTheme.Sage -> Res.string.color_sage
+        ColorTheme.Lavender -> Res.string.color_lavender
+        ColorTheme.Rose -> Res.string.color_rose
+        ColorTheme.Ocean -> Res.string.color_ocean
+        ColorTheme.Amber -> Res.string.color_amber
+        ColorTheme.Slate -> Res.string.color_slate
+    }
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
     val currentMode by ThemeState.mode.collectAsState()
+    val currentColorTheme by ThemeState.colorTheme.collectAsState()
+    val currentBg by BackgroundThemeState.theme.collectAsState()
     val currentLocale by LocaleState.locale.collectAsState()
     val blacklist by FocusSessionState.blacklist.collectAsState()
     val blockRules by FocusSessionState.blockRules.collectAsState()
@@ -104,6 +135,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(Res.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
 
         // --- Appearance ---
@@ -117,12 +149,63 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
             Spacer(Modifier.height(spacing.sm))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            ) {
                 ThemeMode.entries.forEach { mode ->
                     FilterChip(
                         selected = currentMode == mode,
                         onClick = { ThemeState.setMode(mode) },
                         label = { Text(stringResource(mode.labelRes)) },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(spacing.lg))
+
+            SectionLabel(stringResource(Res.string.settings_color_theme))
+            Text(
+                text = stringResource(Res.string.settings_color_theme_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(spacing.sm))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            ) {
+                ColorTheme.entries.forEach { theme ->
+                    FilterChip(
+                        selected = currentColorTheme == theme,
+                        onClick = { ThemeState.setColorTheme(theme) },
+                        label = { Text(stringResource(theme.labelRes)) },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(spacing.lg))
+
+            SectionLabel(stringResource(Res.string.settings_background))
+            Text(
+                text = stringResource(Res.string.settings_background_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(spacing.sm))
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+            ) {
+                BackgroundTheme.entries.forEach { bg ->
+                    FilterChip(
+                        selected = currentBg == bg,
+                        onClick = { BackgroundThemeState.setTheme(bg) },
+                        label = { Text(bgLabel(bg)) },
                     )
                 }
             }
@@ -201,7 +284,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                             onCheckedChange = { FocusSessionState.toggleBlockRule(rule) },
                         )
                         TextButton(onClick = { FocusSessionState.removeBlockRule(rule) }) {
-                            Text("✕", style = MaterialTheme.typography.labelSmall)
+                            Text("\u2715", style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -326,6 +409,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+@Composable
+private fun bgLabel(bg: BackgroundTheme): String = when (bg) {
+    BackgroundTheme.Minimal -> stringResource(Res.string.bg_minimal)
+    BackgroundTheme.Stars -> stringResource(Res.string.bg_stars)
+    BackgroundTheme.Forest -> stringResource(Res.string.bg_forest)
+    BackgroundTheme.Ocean -> stringResource(Res.string.bg_ocean)
 }
 
 // --- Blocked apps list with search, categories, icons ---
