@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">unit2026</string>
+    <string name="accessibility_service_description">Monitors foreground apps to enforce focus sessions.</string>
 </resources>

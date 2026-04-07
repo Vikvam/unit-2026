@@ -44,8 +44,8 @@ fun App() {
 
     CompositionLocalProvider(LocalTrackingClient provides client) {
         OpenJetTracksTheme(themeMode = themeMode) {
-            Surface(modifier = Modifier.fillMaxSize().safeContentPadding()) {
-                HomeScreen()
+            Surface(modifier = Modifier.fillMaxSize()) {
+                HomeScreen(modifier = Modifier.safeContentPadding())
             }
         }
     }

@@ -2,22 +2,25 @@ package cz.aaa.unit2026.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// --- Brand palette ---
+// --- Brand palette — warm & zen ---
 
-val Charcoal = Color(0xFF1E1E2C)
-val DeepNavy = Color(0xFF2B2D42)
-val SlateGray = Color(0xFF8D99AE)
-val CloudWhite = Color(0xFFEDF2F4)
-val OffWhite = Color(0xFFF8F9FA)
+// Neutrals
+val Ink = Color(0xFF2D2B3D)
+val DuskPurple = Color(0xFF3D3A50)
+val Mauve = Color(0xFF9690B0)
+val LavenderMist = Color(0xFFE8E5F0)
+val Snow = Color(0xFFFAF9FC)
+val Cream = Color(0xFFF5F3EE)
 
-// Focus state accents
-val FocusGreen = Color(0xFF2DC653)
-val FocusGreenDark = Color(0xFF1B9E3E)
-val WarningAmber = Color(0xFFF4A623)
-val DistractedRed = Color(0xFFE63946)
-val DistractedRedDark = Color(0xFFC1121F)
-val IdleBlue = Color(0xFF457B9D)
-val IdleBlueDark = Color(0xFF1D3557)
+// Accents
+val SageGreen = Color(0xFF6BAF8D)
+val SageGreenDeep = Color(0xFF4A8D6B)
+val SoftCoral = Color(0xFFE8847C)
+val SoftCoralDeep = Color(0xFFCC635B)
+val WarmAmber = Color(0xFFE8B86D)
+val CalmBlue = Color(0xFF7BA4C7)
+val CalmBlueDeep = Color(0xFF4A7A9E)
+val Peach = Color(0xFFF0C4A8)
 
 /**
  * Semantic focus-state colors, resolved per-theme (light/dark).
@@ -33,21 +36,21 @@ data class FocusColors(
 )
 
 val LightFocusColors = FocusColors(
-    active = FocusGreen,
-    activeContainer = Color(0xFFD4EDDA),
-    distracted = DistractedRed,
-    distractedContainer = Color(0xFFF8D7DA),
-    idle = IdleBlue,
-    idleContainer = Color(0xFFD1ECF1),
-    warning = WarningAmber,
+    active = SageGreen,
+    activeContainer = Color(0xFFDFF0E7),
+    distracted = SoftCoral,
+    distractedContainer = Color(0xFFFDE8E6),
+    idle = CalmBlue,
+    idleContainer = Color(0xFFDFEAF4),
+    warning = WarmAmber,
 )
 
 val DarkFocusColors = FocusColors(
-    active = FocusGreenDark,
-    activeContainer = Color(0xFF14331D),
-    distracted = DistractedRedDark,
-    distractedContainer = Color(0xFF3B0D11),
-    idle = IdleBlueDark,
-    idleContainer = Color(0xFF0D1F2D),
-    warning = WarningAmber,
+    active = SageGreenDeep,
+    activeContainer = Color(0xFF1A2E22),
+    distracted = SoftCoralDeep,
+    distractedContainer = Color(0xFF3A1916),
+    idle = CalmBlueDeep,
+    idleContainer = Color(0xFF162231),
+    warning = WarmAmber,
 )

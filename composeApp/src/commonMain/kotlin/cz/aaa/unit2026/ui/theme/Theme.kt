@@ -1,42 +1,148 @@
 package cz.aaa.unit2026.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 private val LightColorScheme = lightColorScheme(
-    primary = DeepNavy,
-    onPrimary = CloudWhite,
-    primaryContainer = Color(0xFFD6DCEA),
-    onPrimaryContainer = Charcoal,
-    secondary = IdleBlue,
+    primary = SageGreen,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFDFF0E7),
+    onPrimaryContainer = Ink,
+    secondary = CalmBlue,
     onSecondary = Color.White,
-    background = OffWhite,
-    onBackground = Charcoal,
-    surface = Color.White,
-    onSurface = Charcoal,
-    error = DistractedRed,
+    secondaryContainer = Color(0xFFDFEAF4),
+    onSecondaryContainer = Ink,
+    tertiary = Peach,
+    onTertiary = Ink,
+    background = Cream,
+    onBackground = Ink,
+    surface = Snow,
+    onSurface = Ink,
+    surfaceVariant = LavenderMist,
+    onSurfaceVariant = Mauve,
+    error = SoftCoral,
     onError = Color.White,
+    outline = Mauve.copy(alpha = 0.5f),
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = SlateGray,
-    onPrimary = Charcoal,
-    primaryContainer = DeepNavy,
-    onPrimaryContainer = CloudWhite,
-    secondary = IdleBlueDark,
-    onSecondary = CloudWhite,
-    background = Charcoal,
-    onBackground = CloudWhite,
-    surface = DeepNavy,
-    onSurface = CloudWhite,
-    error = DistractedRedDark,
-    onError = CloudWhite,
+    primary = SageGreen,
+    onPrimary = Ink,
+    primaryContainer = SageGreenDeep,
+    onPrimaryContainer = Color(0xFFDFF0E7),
+    secondary = CalmBlue,
+    onSecondary = Ink,
+    secondaryContainer = CalmBlueDeep,
+    onSecondaryContainer = Color(0xFFDFEAF4),
+    tertiary = Peach,
+    onTertiary = Ink,
+    background = Color(0xFF1A1926),
+    onBackground = LavenderMist,
+    surface = DuskPurple,
+    onSurface = LavenderMist,
+    surfaceVariant = Color(0xFF3D3A50),
+    onSurfaceVariant = Mauve,
+    error = SoftCoral,
+    onError = Ink,
+    outline = Mauve.copy(alpha = 0.3f),
+)
+
+private val AppTypography = Typography(
+    displayLarge = TextStyle(
+        fontSize = 48.sp,
+        fontWeight = FontWeight.Light,
+        letterSpacing = (-0.5).sp,
+    ),
+    displayMedium = TextStyle(
+        fontSize = 36.sp,
+        fontWeight = FontWeight.Light,
+        letterSpacing = 0.sp,
+    ),
+    displaySmall = TextStyle(
+        fontSize = 28.sp,
+        fontWeight = FontWeight.Normal,
+    ),
+    headlineLarge = TextStyle(
+        fontSize = 28.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.sp,
+    ),
+    headlineMedium = TextStyle(
+        fontSize = 22.sp,
+        fontWeight = FontWeight.SemiBold,
+    ),
+    headlineSmall = TextStyle(
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold,
+    ),
+    titleLarge = TextStyle(
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Medium,
+    ),
+    titleMedium = TextStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.15.sp,
+    ),
+    titleSmall = TextStyle(
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.1.sp,
+    ),
+    bodyLarge = TextStyle(
+        fontSize = 16.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = 0.25.sp,
+        lineHeight = 24.sp,
+    ),
+    bodyMedium = TextStyle(
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = 0.25.sp,
+        lineHeight = 20.sp,
+    ),
+    bodySmall = TextStyle(
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Normal,
+        letterSpacing = 0.4.sp,
+        lineHeight = 16.sp,
+    ),
+    labelLarge = TextStyle(
+        fontSize = 14.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.1.sp,
+    ),
+    labelMedium = TextStyle(
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.5.sp,
+    ),
+    labelSmall = TextStyle(
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 0.5.sp,
+    ),
+)
+
+private val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 val LocalFocusColors = staticCompositionLocalOf { LightFocusColors }
@@ -61,15 +167,13 @@ fun OpenJetTracksTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = AppShapes,
             content = content,
         )
     }
 }
 
-/**
- * Convenience accessors so screens can write `OpenJetTracksTheme.focus.active`
- * instead of reaching for `LocalFocusColors.current` directly.
- */
 object OpenJetTracksTheme {
     val focus: FocusColors
         @Composable get() = LocalFocusColors.current

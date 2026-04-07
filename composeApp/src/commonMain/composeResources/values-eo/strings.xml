@@ -7,6 +7,9 @@
     <!-- Timer screen -->
     <string name="timer_start">Ekigi</string>
     <string name="timer_stop">Halti</string>
+    <string name="timer_pause">Paŭzi</string>
+    <string name="timer_resume">Daŭrigi</string>
+    <string name="timer_tap_hint">tuŝu por agordi</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Agordoj</string>
@@ -19,6 +22,9 @@
     <string name="theme_system">Sistemo</string>
     <string name="theme_light">Hela</string>
     <string name="theme_dark">Malhela</string>
+    <string name="settings_duration">Seanca daŭro</string>
+    <string name="settings_duration_desc">Daŭro de koncentriĝa seanco en minutoj</string>
+    <string name="settings_duration_minutes">%1$d min</string>
 
     <!-- Report screen -->
     <string name="report_title">Seanca raporto</string>

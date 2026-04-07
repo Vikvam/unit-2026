@@ -26,7 +26,12 @@ class KdeWaylandAppMonitor(
     private val scriptFile: File by lazy { writeScriptToTemp() }
 
     override fun start() {
-        loadKwinScript()
+        try {
+            loadKwinScript()
+        } catch (e: Exception) {
+            // qdbus not available or KWin scripting unavailable — monitor degrades gracefully
+            return
+        }
         tailJob = scope.launch(Dispatchers.IO) {
             tailJournald()
         }
@@ -34,8 +39,12 @@ class KdeWaylandAppMonitor(
 
     override fun stop() {
         tailJob?.cancel()
-        unloadKwinScript()
-        scriptFile.delete()
+        try {
+            unloadKwinScript()
+            scriptFile.delete()
+        } catch (_: Exception) {
+            // best-effort cleanup
+        }
     }
 
     private fun loadKwinScript() {
@@ -74,12 +83,22 @@ class KdeWaylandAppMonitor(
         val caption = parts[0]
         val resourceClass = parts[1]
         val pid = parts.getOrNull(2)?.toIntOrNull()
+        val geometry = runCatching {
+            WindowGeometry(
+                x = parts[3].toInt(),
+                y = parts[4].toInt(),
+                width = parts[5].toInt(),
+                height = parts[6].toInt(),
+                scale = parts.getOrNull(7)?.toFloat() ?: 1f,
+            )
+        }.getOrNull()
 
         return ActiveApp(
             appId = resourceClass,
             appName = resolveAppName(resourceClass, pid),
             windowTitle = caption.takeIf { it.isNotEmpty() },
             capturedAtMs = System.currentTimeMillis(),
+            geometry = geometry,
         )
     }
 
@@ -113,20 +132,30 @@ private val KWIN_SCRIPT = """
 var trackedWindow = null;
 
 function emit(w) {
-    print("$LOG_PREFIX" + w.caption + "|" + w.resourceClass + "|" + w.pid);
+    var g = w.frameGeometry;
+    var scale = 1;
+    try { scale = w.output.devicePixelRatio; } catch(e) {}
+    print("$LOG_PREFIX" + w.caption + "|" + w.resourceClass + "|" + w.pid + "|" + g.x + "|" + g.y + "|" + g.width + "|" + g.height + "|" + scale);
 }
 
 function trackWindow(w) {
     if (trackedWindow) {
         try { trackedWindow.captionChanged.disconnect(onCaptionChanged); } catch(e) {}
+        try { trackedWindow.frameGeometryChanged.disconnect(onGeometryChanged); } catch(e) {}
     }
     trackedWindow = w;
     if (w) {
         w.captionChanged.connect(onCaptionChanged);
+        w.frameGeometryChanged.connect(onGeometryChanged);
     }
 }
 
 function onCaptionChanged() {
+    var w = workspace.activeWindow;
+    if (w) emit(w);
+}
+
+function onGeometryChanged() {
     var w = workspace.activeWindow;
     if (w) emit(w);
 }
