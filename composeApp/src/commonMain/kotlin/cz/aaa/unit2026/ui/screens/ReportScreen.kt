@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cz.aaa.unit2026.session.DistractionAttempt
 import cz.aaa.unit2026.session.FocusSessionRecord
 import cz.aaa.unit2026.session.FocusSessionState
@@ -119,6 +120,7 @@ private fun SessionCard(session: FocusSessionRecord) {
                 state = if (session.completed) TimerState.Running else TimerState.Paused,
                 label = "${session.focusScore}%",
                 size = 96.dp,
+                labelSize = 18.sp,
             )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
@@ -131,7 +133,7 @@ private fun SessionCard(session: FocusSessionRecord) {
                 }
                 SessionTimeline(segments = session.toTimelineSegments())
                 if (session.distractions.isEmpty()) {
-                    Text("No distractions 🎯", style = MaterialTheme.typography.bodySmall, color = focus.active)
+                    Text("No distractions", style = MaterialTheme.typography.bodySmall, color = focus.active)
                 } else {
                     Text("${session.distractions.size} distraction attempt${if (session.distractions.size == 1) "" else "s"}", style = MaterialTheme.typography.bodySmall, color = focus.distracted)
                 }
@@ -182,10 +184,10 @@ private fun PersonalRecords(sessions: List<FocusSessionRecord>) {
     val spacing = OpenJetTracksTheme.spacing
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            sessions.maxByOrNull { it.durationMinutes }?.let { RecordRow("🏆 Longest session", "${it.durationMinutes} min") }
-            sessions.maxByOrNull { it.focusScore }?.let { RecordRow("🎯 Best focus score", "${it.focusScore}%") }
-            RecordRow("⚡ Distractions resisted", "${sessions.sumOf { it.distractions.size }}")
-            RecordRow("📚 Sessions completed", "${sessions.count { it.completed }} / ${sessions.size}")
+            sessions.maxByOrNull { it.durationMinutes }?.let { RecordRow("Longest session", "${it.durationMinutes} min") }
+            sessions.maxByOrNull { it.focusScore }?.let { RecordRow("Best focus score", "${it.focusScore}%") }
+            RecordRow("Distractions resisted", "${sessions.sumOf { it.distractions.size }}")
+            RecordRow("Sessions completed", "${sessions.count { it.completed }} / ${sessions.size}")
         }
     }
 }
