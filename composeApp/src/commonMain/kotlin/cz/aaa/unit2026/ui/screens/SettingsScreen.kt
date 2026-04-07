@@ -1,31 +1,32 @@
 package cz.aaa.unit2026.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import cz.aaa.unit2026.ui.theme.ThemeMode
+import cz.aaa.unit2026.ui.theme.ThemeState
 
-/**
- * Settings screen — strict mode toggle, whitelist management, theme, language.
- *
- * TODO: wire to a shared ViewModel once :shared exposes user settings.
- */
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val spacing = OpenJetTracksTheme.spacing
+    val currentMode by ThemeState.mode.collectAsState()
 
     Column(
         modifier = modifier
@@ -47,15 +48,30 @@ fun SettingsScreen(
             onCheckedChange = { /* TODO */ },
         )
 
-        Spacer(Modifier.height(spacing.md))
+        Spacer(Modifier.height(spacing.lg))
 
-        // Dark theme
-        SettingsRow(
-            label = "Dark theme",
-            description = "Follow system setting",
-            checked = false,
-            onCheckedChange = { /* TODO */ },
+        // Theme
+        Text(
+            text = "Theme",
+            style = MaterialTheme.typography.bodyLarge,
         )
+        Text(
+            text = "Choose light, dark, or follow your system setting",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(spacing.sm))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            ThemeMode.entries.forEach { mode ->
+                FilterChip(
+                    selected = currentMode == mode,
+                    onClick = { ThemeState.setMode(mode) },
+                    label = { Text(mode.name) },
+                )
+            }
+        }
     }
 }
 
