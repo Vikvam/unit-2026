@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import cz.aaa.unit2026.blocking.BlockRule
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
@@ -21,6 +22,7 @@ fun DebugScreen(modifier: Modifier = Modifier) {
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
     val blocked by FocusSessionState.blockedApp.collectAsState()
     val blacklist by FocusSessionState.blacklist.collectAsState()
+    val blockRules by FocusSessionState.blockRules.collectAsState()
     val seenApps by FocusSessionState.seenApps.collectAsState()
 
     LazyColumn(
@@ -60,7 +62,7 @@ fun DebugScreen(modifier: Modifier = Modifier) {
                 Column(modifier = Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                     Text("Current window", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     if (current != null) {
-                        AppInfoRows(current!!, blacklist)
+                        AppInfoRows(current!!, blacklist, blockRules)
                     } else {
                         Text("No window detected", style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -108,8 +110,13 @@ fun DebugScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun AppInfoRows(app: ActiveApp, blacklist: Set<String>) {
+private fun AppInfoRows(app: ActiveApp, blacklist: Set<String>, blockRules: List<BlockRule>) {
     val spacing = OpenJetTracksTheme.spacing
+    val target = "${app.appId} ${app.windowTitle ?: ""}"
+    val matchedRule = blockRules.filter { it.enabled }.firstOrNull { rule ->
+        runCatching { Regex(rule.pattern, RegexOption.IGNORE_CASE).containsMatchIn(target) }
+            .getOrDefault(false)
+    }
     Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
         InfoRow("appId", app.appId)
         InfoRow("appName", app.appName)
@@ -119,6 +126,8 @@ private fun AppInfoRows(app: ActiveApp, blacklist: Set<String>) {
             InfoRow("geometry", "${g.x}x${g.y} ${g.width}×${g.height} @${g.scale}x")
         }
         InfoRow("blacklisted", if (app.appId in blacklist) "yes" else "no")
+        InfoRow("rule match", matchedRule?.label ?: "none")
+        InfoRow("target", target)
     }
 }
 
