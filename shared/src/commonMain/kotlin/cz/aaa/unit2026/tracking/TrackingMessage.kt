@@ -23,6 +23,14 @@ sealed class ClientMessage {
     @Serializable
     @SerialName("sessionStop")
     data object SessionStop : ClientMessage()
+
+    @Serializable
+    @SerialName("sessionPause")
+    data object SessionPause : ClientMessage()
+
+    @Serializable
+    @SerialName("sessionResume")
+    data object SessionResume : ClientMessage()
 }
 
 // ── Server → Client ──────────────────────────────────────────────────────────
@@ -42,6 +50,16 @@ sealed class ServerMessage {
     @Serializable
     @SerialName("sessionStopped")
     data class SessionStopped(val session: TrackingSession) : ServerMessage()
+
+    /** Broadcast to all clients when the active session is paused. */
+    @Serializable
+    @SerialName("sessionPaused")
+    data class SessionPaused(val session: TrackingSession) : ServerMessage()
+
+    /** Broadcast to all clients when the active session is resumed from pause. */
+    @Serializable
+    @SerialName("sessionResumed")
+    data class SessionResumed(val session: TrackingSession) : ServerMessage()
 
     /**
      * Sent to a newly connected client so it can reconcile local state with the server.

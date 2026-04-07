@@ -4,8 +4,11 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.slf4j.LoggerFactory
 import java.util.UUID
 import java.util.concurrent.CopyOnWriteArraySet
+
+private val log = LoggerFactory.getLogger("SessionRegistry")
 
 /**
  * Thread-safe in-memory store for the single active session and all live WebSocket connections.
@@ -67,11 +70,37 @@ class SessionRegistry {
     }
 
     /**
+     * Pauses the current session by setting [TrackingSession.pausedAtMs].
+     * Returns the updated session, or null if no session is active or it is already paused.
+     */
+    suspend fun pauseSession(): TrackingSession? = mutex.withLock {
+        val current = activeSession ?: return@withLock null
+        if (current.pausedAtMs != null) return@withLock null   // already paused
+        val paused = current.copy(pausedAtMs = System.currentTimeMillis())
+        activeSession = paused
+        paused
+    }
+
+    /**
+     * Resumes a paused session by clearing [TrackingSession.pausedAtMs].
+     * Returns the updated session, or null if no session is active or it is not paused.
+     */
+    suspend fun resumeSession(): TrackingSession? = mutex.withLock {
+        val current = activeSession ?: return@withLock null
+        if (current.pausedAtMs == null) return@withLock null   // not paused
+        val resumed = current.copy(pausedAtMs = null)
+        activeSession = resumed
+        resumed
+    }
+
+    /**
      * Sends [message] to every connected client except [exclude].
      * Per-socket send errors are swallowed — the disconnect handler calls [leave] independently.
      */
     suspend fun broadcast(message: ServerMessage, exclude: DefaultWebSocketServerSession? = null) {
-        val frame = Frame.Text(trackingJson.encodeToString<ServerMessage>(message))
+        val text = trackingJson.encodeToString<ServerMessage>(message)
+        log.debug("WS >> broadcast ({}): {}", sessions.size, text)
+        val frame = Frame.Text(text)
         sessions.forEach { ws ->
             if (ws !== exclude) runCatching { ws.send(frame) }
         }
@@ -79,7 +108,8 @@ class SessionRegistry {
 
     /** Sends [message] to a single target session only. */
     suspend fun sendTo(target: DefaultWebSocketServerSession, message: ServerMessage) {
-        val frame = Frame.Text(trackingJson.encodeToString<ServerMessage>(message))
-        runCatching { target.send(frame) }
+        val text = trackingJson.encodeToString<ServerMessage>(message)
+        log.debug("WS >> sendTo: {}", text)
+        runCatching { target.send(Frame.Text(text)) }
     }
 }
