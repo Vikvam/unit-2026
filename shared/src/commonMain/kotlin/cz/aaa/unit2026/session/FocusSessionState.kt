@@ -29,6 +29,14 @@ object FocusSessionState {
     private var enforcer: BlockingEnforcer? = null
     private var timerJob: Job? = null
 
+    // --- Session history ---
+    private val _sessionHistory = MutableStateFlow<List<FocusSessionRecord>>(emptyList())
+    val sessionHistory: StateFlow<List<FocusSessionRecord>> = _sessionHistory.asStateFlow()
+
+    private var sessionStartMs = 0L
+    private var plannedSeconds = 0L
+    private val currentDistractions = mutableListOf<DistractionAttempt>()
+
     // --- Session state ---
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -78,6 +86,24 @@ object FocusSessionState {
                 }
                 if (_isRunning.value && !_isPaused.value && _isStrictMode.value && app.appId !in SELF_APP_IDS) {
                     if (shouldBlock(app)) {
+                        val alreadyBlocked = _blockedApp.value?.appId == app.appId
+                        if (!alreadyBlocked) {
+                            val matchedRule = _blockRules.value.filter { it.enabled }
+                                .firstOrNull { rule ->
+                                    runCatching {
+                                        Regex(rule.pattern, RegexOption.IGNORE_CASE)
+                                            .containsMatchIn("${app.appId} ${app.windowTitle ?: ""}")
+                                    }.getOrDefault(false)
+                                }
+                            currentDistractions.add(
+                                DistractionAttempt(
+                                    timestampMs = System.currentTimeMillis(),
+                                    appId = app.appId,
+                                    appName = app.appName,
+                                    matchedRule = matchedRule?.label,
+                                )
+                            )
+                        }
                         enforcer.block(app)
                         _blockedApp.value = app
                     } else {
@@ -104,6 +130,9 @@ object FocusSessionState {
         _isRunning.value = true
         _isPaused.value = false
         _remainingSeconds.value = _durationSeconds.value
+        sessionStartMs = System.currentTimeMillis()
+        plannedSeconds = _durationSeconds.value
+        currentDistractions.clear()
         startTimer()
     }
 
@@ -123,6 +152,9 @@ object FocusSessionState {
     }
 
     fun stopSession() {
+        if (_isRunning.value && sessionStartMs > 0L) {
+            saveSession(completed = _remainingSeconds.value == 0L)
+        }
         _isRunning.value = false
         _isPaused.value = false
         _remainingSeconds.value = 0L
@@ -130,6 +162,19 @@ object FocusSessionState {
         timerJob = null
         enforcer?.unblock()
         _blockedApp.value = null
+    }
+
+    private fun saveSession(completed: Boolean) {
+        val record = FocusSessionRecord(
+            id = sessionStartMs,
+            startTimeMs = sessionStartMs,
+            endTimeMs = System.currentTimeMillis(),
+            plannedSeconds = plannedSeconds,
+            completed = completed,
+            distractions = currentDistractions.toList(),
+        )
+        _sessionHistory.value = _sessionHistory.value + record
+        currentDistractions.clear()
     }
 
     private fun startTimer() {
