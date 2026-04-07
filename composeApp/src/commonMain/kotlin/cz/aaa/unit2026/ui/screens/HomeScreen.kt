@@ -1,5 +1,8 @@
 package cz.aaa.unit2026.ui.screens
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,14 +14,17 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import cz.aaa.unit2026.ui.navigation.NavigationDestination
 import org.jetbrains.compose.resources.stringResource
 
@@ -27,12 +33,10 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier = modifier) {
         val useNavRail = maxWidth >= 600.dp
 
-    var selected by rememberSaveable { mutableStateOf(NavigationDestination.Timer) }
-
         if (useNavRail) {
-            ExpandedHome(selected = selected, onSelect = { selected = it })
+            ExpandedHome()
         } else {
-            CompactHome(selected = selected, onSelect = { selected = it })
+            CompactHome()
         }
     }
 }
@@ -41,11 +45,10 @@ fun HomeScreen(modifier: Modifier = Modifier) {
  * Phone layout — bottom navigation bar + full-screen content.
  */
 @Composable
-private fun CompactHome(
-    selected: NavigationDestination,
-    onSelect: (NavigationDestination) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun CompactHome(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -53,8 +56,16 @@ private fun CompactHome(
             NavigationBar {
                 NavigationDestination.entries.forEach { dest ->
                     NavigationBarItem(
-                        selected = selected == dest,
-                        onClick = { onSelect(dest) },
+                        selected = backStackEntry?.destination?.hasRoute(dest.route::class) == true,
+                        onClick = {
+                            navController.navigate(dest.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
                         label = { Text(stringResource(dest.labelRes)) },
                     )
@@ -62,8 +73,8 @@ private fun CompactHome(
             }
         },
     ) { innerPadding ->
-        ScreenContent(
-            destination = selected,
+        AppNavHost(
+            navController = navController,
             modifier = Modifier.padding(innerPadding),
         )
     }
@@ -73,38 +84,59 @@ private fun CompactHome(
  * Desktop / tablet layout — navigation rail on the left + content area.
  */
 @Composable
-private fun ExpandedHome(
-    selected: NavigationDestination,
-    onSelect: (NavigationDestination) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun ExpandedHome(modifier: Modifier = Modifier) {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+
     Row(modifier = modifier.fillMaxSize()) {
         NavigationRail {
             NavigationDestination.entries.forEach { dest ->
                 NavigationRailItem(
-                    selected = selected == dest,
-                    onClick = { onSelect(dest) },
+                    selected = backStackEntry?.destination?.hasRoute(dest.route::class) == true,
+                    onClick = {
+                        navController.navigate(dest.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                     icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
                     label = { Text(stringResource(dest.labelRes)) },
                 )
             }
         }
-        ScreenContent(
-            destination = selected,
+        AppNavHost(
+            navController = navController,
             modifier = Modifier.weight(1f),
         )
     }
 }
 
 @Composable
-private fun ScreenContent(
-    destination: NavigationDestination,
+private fun AppNavHost(
+    navController: androidx.navigation.NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    when (destination) {
-        NavigationDestination.Timer -> TimerScreen(modifier = modifier)
-        NavigationDestination.Settings -> SettingsScreen(modifier = modifier)
-        NavigationDestination.Report -> ReportScreen(modifier = modifier)
-        NavigationDestination.Debug -> DebugScreen(modifier = modifier)
+    NavHost(
+        navController = navController,
+        startDestination = NavigationDestination.Timer.route,
+        modifier = modifier,
+        enterTransition = { fadeIn(tween(250)) },
+        exitTransition = { fadeOut(tween(200)) },
+    ) {
+        composable<NavigationDestination.Route.Timer> {
+            TimerScreen()
+        }
+        composable<NavigationDestination.Route.Settings> {
+            SettingsScreen()
+        }
+        composable<NavigationDestination.Route.Report> {
+            ReportScreen()
+        }
+        composable<NavigationDestination.Route.Debug> {
+            DebugScreen()
+        }
     }
 }

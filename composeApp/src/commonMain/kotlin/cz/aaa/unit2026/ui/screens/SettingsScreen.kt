@@ -1,20 +1,29 @@
 package cz.aaa.unit2026.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -58,6 +67,7 @@ import cz.aaa.unit2026.ui.theme.BackgroundThemeState
 import cz.aaa.unit2026.ui.theme.ColorTheme
 import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import cz.aaa.unit2026.ui.theme.previewColorsFor
 import cz.aaa.unit2026.ui.theme.ThemeMode
 import cz.aaa.unit2026.ui.theme.ThemeState
 import cz.aaa.unit2026.ui.util.decodeImageBitmap
@@ -173,15 +183,18 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
             Spacer(Modifier.height(spacing.sm))
 
-            FlowRow(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm),
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                userScrollEnabled = false,
             ) {
-                ColorTheme.entries.forEach { theme ->
-                    FilterChip(
+                items(ColorTheme.entries) { theme ->
+                    ColorThemeSwatch(
+                        theme = theme,
                         selected = currentColorTheme == theme,
                         onClick = { ThemeState.setColorTheme(theme) },
-                        label = { Text(stringResource(theme.labelRes)) },
                     )
                 }
             }
@@ -525,8 +538,8 @@ private fun CategoryGroup(
         )
     }
 
-    AnimatedVisibility(visible = expanded) {
-        Column {
+    Column(modifier = Modifier.animateContentSize(animationSpec = tween(300))) {
+        if (expanded) {
             apps.forEach { app ->
                 val isBlocked = app.appId in blacklist
                 Row(
@@ -561,6 +574,48 @@ private fun CategoryGroup(
                     )
                 }
             }
+        }
+    }
+}
+
+// --- Color theme swatch ---
+
+@Composable
+private fun ColorThemeSwatch(
+    theme: ColorTheme,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val (primary, secondary) = previewColorsFor(theme)
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary
+                      else MaterialTheme.colorScheme.outlineVariant
+    val borderWidth = if (selected) 2.dp else 1.dp
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(2.2f)
+            .border(borderWidth, borderColor, RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Canvas(modifier = Modifier.size(12.dp)) {
+                drawCircle(color = primary)
+            }
+            Canvas(modifier = Modifier.size(12.dp)) {
+                drawCircle(color = secondary)
+            }
+            Text(
+                text = stringResource(theme.labelRes),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
