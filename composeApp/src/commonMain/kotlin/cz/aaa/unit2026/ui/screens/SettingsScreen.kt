@@ -47,6 +47,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import cz.aaa.unit2026.blocking.InstalledApp
+import cz.aaa.unit2026.getPlatform
 import cz.aaa.unit2026.monitoring.AppCategory
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.theme.AppLocale
@@ -169,8 +170,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // --- Block rules (regex — for desktop browser titles) ---
-        SettingsCard {
+        // --- Block rules (regex — desktop only, for browser titles) ---
+        if (getPlatform().isDesktop) SettingsCard {
             SectionLabel("Block rules")
             Text(
                 "Matched against app name + window title. Useful for blocking sites inside a browser.",
@@ -246,8 +247,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        // --- Blocked apps ---
-        SettingsCard {
+        // --- Blocked apps (Android only — categorized list with icons) ---
+        if (getPlatform().isAndroid) SettingsCard {
             SectionLabel(stringResource(Res.string.settings_blocked_apps))
             Text(
                 text = stringResource(Res.string.settings_blocked_apps_desc),
@@ -257,7 +258,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 
             Spacer(Modifier.height(spacing.sm))
 
-            // On Android: use installedApps. On Desktop: fall back to seenApps.
             if (installedApps.isNotEmpty()) {
                 BlockedAppsList(
                     apps = installedApps,
@@ -267,37 +267,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                         else FocusSessionState.removeFromBlacklist(appId)
                     },
                 )
-            } else if (seenApps.isNotEmpty()) {
-                // Desktop fallback — flat list from seen apps
-                seenApps.values.sortedBy { it.appId }.forEach { app ->
-                    val isBlocked = app.appId in blacklist
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (isBlocked) FocusSessionState.removeFromBlacklist(app.appId)
-                                else FocusSessionState.addToBlacklist(app.appId)
-                            },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(app.appName, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                app.appId,
-                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Checkbox(
-                            checked = isBlocked,
-                            onCheckedChange = { checked ->
-                                if (checked) FocusSessionState.addToBlacklist(app.appId)
-                                else FocusSessionState.removeFromBlacklist(app.appId)
-                            },
-                        )
-                    }
-                }
             } else {
                 Text(
                     text = stringResource(Res.string.settings_blocked_apps_empty),
