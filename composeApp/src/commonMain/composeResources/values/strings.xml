@@ -11,6 +11,8 @@
     <string name="timer_pause">Pause</string>
     <string name="timer_resume">Resume</string>
     <string name="timer_tap_hint">tap to configure</string>
+    <string name="timer_strict_on">Strict mode on</string>
+    <string name="timer_strict_off">Strict mode off</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
@@ -33,6 +35,14 @@
     <string name="report_distracted">Distracted: %1$s</string>
     <string name="report_total">%1$s total session</string>
     <string name="report_timeline">Session timeline</string>
+
+    <!-- Blocked apps -->
+    <string name="settings_blocked_apps">Blocked apps</string>
+    <string name="settings_blocked_apps_desc">These apps will be blocked when strict mode is on.</string>
+    <string name="settings_blocked_apps_empty">App list not available on this platform.</string>
+    <string name="settings_blocked_apps_search">Search apps...</string>
+    <string name="settings_blocked_apps_count">%1$d of %2$d apps blocked</string>
+    <string name="settings_blocked_apps_in_category">%1$d blocked</string>
 
     <!-- Blocking overlay -->
     <string name="blocking_title">Stay focused!</string>

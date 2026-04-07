@@ -10,6 +10,8 @@
     <string name="timer_pause">Pausa</string>
     <string name="timer_resume">Reanudar</string>
     <string name="timer_tap_hint">toca para configurar</string>
+    <string name="timer_strict_on">Modo estricto activado</string>
+    <string name="timer_strict_off">Modo estricto desactivado</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Ajustes</string>
@@ -32,6 +34,14 @@
     <string name="report_distracted">Distraído: %1$s</string>
     <string name="report_total">%1$s sesión total</string>
     <string name="report_timeline">Cronología de la sesión</string>
+
+    <!-- Blocked apps -->
+    <string name="settings_blocked_apps">Aplicaciones bloqueadas</string>
+    <string name="settings_blocked_apps_desc">Estas aplicaciones se bloquearán cuando el modo estricto esté activado.</string>
+    <string name="settings_blocked_apps_empty">Lista de aplicaciones no disponible en esta plataforma.</string>
+    <string name="settings_blocked_apps_search">Buscar aplicaciones...</string>
+    <string name="settings_blocked_apps_count">%1$d de %2$d aplicaciones bloqueadas</string>
+    <string name="settings_blocked_apps_in_category">%1$d bloqueadas</string>
 
     <!-- Blocking overlay -->
     <string name="blocking_title">¡Mantén el enfoque!</string>

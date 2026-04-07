@@ -2,6 +2,7 @@ package cz.aaa.unit2026.session
 
 import cz.aaa.unit2026.blocking.BlockRule
 import cz.aaa.unit2026.blocking.BlockingEnforcer
+import cz.aaa.unit2026.monitoring.AppCategory
 import cz.aaa.unit2026.blocking.DEFAULT_BLACKLIST
 import cz.aaa.unit2026.blocking.DEFAULT_BLOCK_RULES
 import cz.aaa.unit2026.blocking.InstalledApp
@@ -64,7 +65,7 @@ object FocusSessionState {
     val seenApps: StateFlow<Map<String, ActiveApp>> = _seenApps.asStateFlow()
 
     // --- Blocking ---
-    private val _isStrictMode = MutableStateFlow(false)
+    private val _isStrictMode = MutableStateFlow(true)
     val isStrictMode: StateFlow<Boolean> = _isStrictMode.asStateFlow()
 
     private val _blacklist = MutableStateFlow(DEFAULT_BLACKLIST.toMutableSet() as Set<String>)
@@ -142,6 +143,14 @@ object FocusSessionState {
 
     fun setInstalledApps(apps: List<InstalledApp>) {
         _installedApps.value = apps
+        // Auto-block apps in default-blocked categories (e.g. Games) that aren't already known
+        val autoBlock = apps
+            .filter { it.category in AppCategory.DEFAULT_BLOCKED && it.appId !in _blacklist.value }
+            .map { it.appId }
+            .toSet()
+        if (autoBlock.isNotEmpty()) {
+            _blacklist.value = _blacklist.value + autoBlock
+        }
     }
 
     fun setDurationMinutes(minutes: Int) {
@@ -231,6 +240,14 @@ object FocusSessionState {
 
     fun removeFromBlacklist(appId: String) {
         _blacklist.value = _blacklist.value - appId
+    }
+
+    fun addAllToBlacklist(appIds: Set<String>) {
+        _blacklist.value = _blacklist.value + appIds
+    }
+
+    fun removeAllFromBlacklist(appIds: Set<String>) {
+        _blacklist.value = _blacklist.value - appIds
     }
 
     fun addBlockRule(rule: BlockRule) {

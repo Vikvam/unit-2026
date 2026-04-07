@@ -51,6 +51,9 @@ val DEFAULT_BLACKLIST: Set<String> = setOf(
     "com.xvideos.android",
     "com.xnxx.android",
 
+    // Audio / Podcasts
+    "com.google.android.apps.podcasts",
+
     // Desktop (resourceClass)
     "steam",
     "lutris",

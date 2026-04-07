@@ -10,6 +10,8 @@
     <string name="timer_pause">一時停止</string>
     <string name="timer_resume">再開</string>
     <string name="timer_tap_hint">タップして設定</string>
+    <string name="timer_strict_on">厳格モード オン</string>
+    <string name="timer_strict_off">厳格モード オフ</string>
 
     <!-- Settings screen -->
     <string name="settings_title">設定</string>
@@ -32,6 +34,14 @@
     <string name="report_distracted">注意散漫: %1$s</string>
     <string name="report_total">%1$s 合計セッション</string>
     <string name="report_timeline">セッションタイムライン</string>
+
+    <!-- Blocked apps -->
+    <string name="settings_blocked_apps">ブロック中のアプリ</string>
+    <string name="settings_blocked_apps_desc">厳格モードが有効な場合、これらのアプリがブロックされます。</string>
+    <string name="settings_blocked_apps_empty">このプラットフォームではアプリ一覧を取得できません。</string>
+    <string name="settings_blocked_apps_search">アプリを検索...</string>
+    <string name="settings_blocked_apps_count">%1$d / %2$d アプリをブロック中</string>
+    <string name="settings_blocked_apps_in_category">%1$d ブロック中</string>
 
     <!-- Blocking overlay -->
     <string name="blocking_title">集中してください！</string>
