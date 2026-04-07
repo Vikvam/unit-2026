@@ -14,8 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.SerializationException
+import java.util.logging.Logger
 import kotlin.coroutines.coroutineContext
 import kotlin.math.min
+
+private val log: Logger = Logger.getLogger("KtorTrackingClient")
 
 /**
  * JVM (Desktop) implementation of [TrackingClient].
@@ -67,25 +70,31 @@ class KtorTrackingClient(
                     outgoingChannel = this.outgoing
                     _isConnected.value = true
                     backoffMs = 1_000L   // reset on successful connect
+                    log.info("[WS] Connected to $host:$port")
 
                     sendMessage(ClientMessage.Register(deviceId))
 
                     // Receive SessionState from server for reconciliation
                     val firstFrame = incoming.receive()
                     if (firstFrame is Frame.Text) {
-                        reconcile(firstFrame.readText())
+                        val text = firstFrame.readText()
+                        log.info("[WS] << $text")
+                        reconcile(text)
                     }
 
                     for (frame in incoming) {
                         if (frame !is Frame.Text) continue
-                        handleServerMessage(frame.readText())
+                        val text = frame.readText()
+                        log.info("[WS] << $text")
+                        handleServerMessage(text)
                     }
                 }
-            } catch (_: Exception) {
-                // Connection failed or dropped — fall through to backoff
+            } catch (e: Exception) {
+                log.warning("[WS] Connection error: ${e.message}")
             } finally {
                 outgoingChannel = null
                 _isConnected.value = false
+                log.info("[WS] Disconnected from $host:$port")
             }
 
             if (!running) break
@@ -178,6 +187,7 @@ class KtorTrackingClient(
     private suspend fun sendMessage(message: ClientMessage) {
         val channel = outgoingChannel ?: return
         val text = trackingJson.encodeToString<ClientMessage>(message)
+        log.info("[WS] >> $text")
         try { channel.send(Frame.Text(text)) } catch (_: Exception) { /* socket closed */ }
     }
 }
