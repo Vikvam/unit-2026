@@ -305,6 +305,18 @@ private val SlateDarkScheme = darkColorScheme(
 
 // endregion
 
+/**
+ * Returns the primary + secondary preview colors for a theme swatch.
+ */
+fun previewColorsFor(theme: ColorTheme): Pair<Color, Color> = when (theme) {
+    ColorTheme.Sage -> SageGreen to CalmBlue
+    ColorTheme.Lavender -> Color(0xFF8B7EC8) to Color(0xFFC48BB0)
+    ColorTheme.Rose -> Color(0xFFD4756A) to Color(0xFFB4917A)
+    ColorTheme.Ocean -> Color(0xFF5B98B0) to Color(0xFF6BABA5)
+    ColorTheme.Amber -> Color(0xFFC49B4A) to Color(0xFFB08060)
+    ColorTheme.Slate -> Color(0xFF7889A0) to Color(0xFF8A9696)
+}
+
 internal fun colorSchemeFor(theme: ColorTheme, dark: Boolean): ColorScheme = when (theme) {
     ColorTheme.Sage -> if (dark) SageDarkScheme else SageLightScheme
     ColorTheme.Lavender -> if (dark) LavenderDarkScheme else LavenderLightScheme
