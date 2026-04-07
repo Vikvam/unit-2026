@@ -15,6 +15,9 @@ import cz.aaa.unit2026.ui.components.BlockingOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
+// KDE title bar height in physical pixels at 150% scale (~37 logical × 1.5)
+private const val TITLE_BAR_PX = 56f
+
 fun main() {
     val scope = CoroutineScope(Dispatchers.Default)
     val enforcer = DesktopBlockingEnforcer()
@@ -28,6 +31,8 @@ fun main() {
 
     application {
         val blocked by enforcer.blockedApp.collectAsState()
+        val remainingSeconds by FocusSessionState.remainingSeconds.collectAsState()
+        val remainingLabel = "%d:%02d".format(remainingSeconds / 60, remainingSeconds % 60)
 
         Window(
             onCloseRequest = ::exitApplication,
@@ -42,8 +47,8 @@ fun main() {
                 onCloseRequest = {},
                 title = "OpenJetTracks-Overlay",
                 state = if (geo != null) WindowState(
-                    position = WindowPosition((geo.x * geo.scale).dp, (geo.y * geo.scale).dp),
-                    size = DpSize((geo.width * geo.scale).dp, (geo.height * geo.scale).dp),
+                    position = WindowPosition((geo.x * geo.scale).dp, (geo.y * geo.scale + TITLE_BAR_PX).dp),
+                    size = DpSize((geo.width * geo.scale).dp, (geo.height * geo.scale - TITLE_BAR_PX).dp),
                 ) else WindowState(),
                 undecorated = true,
                 alwaysOnTop = true,
@@ -52,7 +57,7 @@ fun main() {
             ) {
                 BlockingOverlay(
                     appName = blocked!!.appName,
-                    remainingLabel = "–",
+                    remainingLabel = remainingLabel,
                 )
             }
         }
