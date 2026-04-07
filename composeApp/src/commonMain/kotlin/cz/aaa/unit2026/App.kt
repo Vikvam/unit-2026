@@ -6,7 +6,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import cz.aaa.unit2026.ui.screens.TimerScreen
+import cz.aaa.unit2026.ui.screens.HomeScreen
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 
 @Composable
@@ -14,7 +14,7 @@ import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 fun App() {
     OpenJetTracksTheme {
         Surface(modifier = Modifier.fillMaxSize().safeContentPadding()) {
-            TimerScreen()
+            HomeScreen()
         }
     }
 }
