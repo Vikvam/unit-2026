@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import cz.aaa.unit2026.session.AppUsageStat
 import cz.aaa.unit2026.session.DistractionAttempt
 import cz.aaa.unit2026.session.FocusSessionRecord
 import cz.aaa.unit2026.session.FocusSessionState
@@ -29,6 +30,7 @@ import unit2026.composeapp.generated.resources.report_title
 fun ReportScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
     val sessions by FocusSessionState.sessionHistory.collectAsState()
+    val appUsage by FocusSessionState.appUsage.collectAsState()
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(spacing.lg),
@@ -72,6 +74,18 @@ fun ReportScreen(modifier: Modifier = Modifier) {
                 .entries.sortedByDescending { it.value.size }.take(5)
             item { SectionHeader("Top distractions") }
             itemsIndexed(ranked) { i, (name, attempts) -> DistractionRow(i + 1, name, attempts) }
+        }
+
+        // App usage
+        val usageList = appUsage.values
+            .filter { it.totalMs > 5_000 } // skip blips under 5s
+            .sortedByDescending { it.totalMs }
+            .take(8)
+        if (usageList.isNotEmpty()) {
+            item {
+                SectionHeader("App usage")
+                AppUsageList(usageList)
+            }
         }
 
         item {
@@ -197,6 +211,91 @@ private fun RecordRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun AppUsageList(stats: List<AppUsageStat>) {
+    val spacing = OpenJetTracksTheme.spacing
+    val focus = OpenJetTracksTheme.focus
+    val maxMs = stats.maxOf { it.totalMs }.coerceAtLeast(1L)
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            stats.forEach { stat ->
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stat.appName, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            formatDuration(stat.totalMs),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // Split bar: green = focus time, gray = off-focus time
+                    val totalFraction = stat.totalMs.toFloat() / maxMs
+                    val focusFraction = if (stat.totalMs > 0) stat.focusMs.toFloat() / stat.totalMs else 0f
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(6.dp).background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            RoundedCornerShape(3.dp),
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(totalFraction)
+                                .fillMaxHeight()
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(3.dp))
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(totalFraction * focusFraction)
+                                .fillMaxHeight()
+                                .background(focus.active, RoundedCornerShape(3.dp))
+                        )
+                        if (totalFraction * (1f - focusFraction) > 0.01f) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(totalFraction)
+                                    .fillMaxHeight()
+                                    .padding(start = (totalFraction * focusFraction * 300).dp.coerceAtMost(200.dp))
+                                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(3.dp))
+                            )
+                        }
+                    }
+                    if (stat.focusMs > 0 && stat.offFocusMs > 0) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                            Text(
+                                "Focus: ${formatDuration(stat.focusMs)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = focus.active,
+                            )
+                            Text(
+                                "Other: ${formatDuration(stat.offFocusMs)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalSecs = ms / 1000
+    val h = totalSecs / 3600
+    val m = (totalSecs % 3600) / 60
+    val s = totalSecs % 60
+    return when {
+        h > 0 -> "${h}h ${m}m"
+        m > 0 -> "${m}m ${s}s"
+        else  -> "${s}s"
     }
 }
 

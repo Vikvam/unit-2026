@@ -37,6 +37,13 @@ object FocusSessionState {
     private var plannedSeconds = 0L
     private val currentDistractions = mutableListOf<DistractionAttempt>()
 
+    // --- App usage tracking ---
+    private val _appUsage = MutableStateFlow<Map<String, AppUsageStat>>(emptyMap())
+    val appUsage: StateFlow<Map<String, AppUsageStat>> = _appUsage.asStateFlow()
+
+    private var lastTrackedApp: ActiveApp? = null
+    private var lastTrackedStartMs = 0L
+
     // --- Session state ---
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -81,6 +88,24 @@ object FocusSessionState {
         scope.launch {
             monitor.activeApp.collect { app ->
                 _currentApp.value = app
+
+                // Record time spent in the previous app before switching
+                val prev = lastTrackedApp
+                if (prev != null && prev.appId !in SELF_APP_IDS) {
+                    val durationMs = System.currentTimeMillis() - lastTrackedStartMs
+                    if (durationMs > 0) {
+                        val duringFocus = _isRunning.value && !_isPaused.value
+                        val existing = _appUsage.value[prev.appId] ?: AppUsageStat(prev.appId, prev.appName)
+                        _appUsage.value = _appUsage.value + (prev.appId to if (duringFocus) {
+                            existing.copy(focusMs = existing.focusMs + durationMs)
+                        } else {
+                            existing.copy(offFocusMs = existing.offFocusMs + durationMs)
+                        })
+                    }
+                }
+                lastTrackedApp = app
+                lastTrackedStartMs = System.currentTimeMillis()
+
                 if (app.appId !in SELF_APP_IDS) {
                     _seenApps.value = _seenApps.value + (app.appId to app)
                 }
