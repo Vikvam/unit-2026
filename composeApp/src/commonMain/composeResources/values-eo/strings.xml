@@ -19,6 +19,9 @@
     <string name="theme_system">Sistemo</string>
     <string name="theme_light">Hela</string>
     <string name="theme_dark">Malhela</string>
+    <string name="settings_duration">Seanca daŭro</string>
+    <string name="settings_duration_desc">Daŭro de koncentriĝa seanco en minutoj</string>
+    <string name="settings_duration_minutes">%1$d min</string>
 
     <!-- Report screen -->
     <string name="report_title">Seanca raporto</string>

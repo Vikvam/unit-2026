@@ -19,6 +19,9 @@
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
+    <string name="settings_duration">Duración de sesión</string>
+    <string name="settings_duration_desc">Duración de una sesión de enfoque en minutos</string>
+    <string name="settings_duration_minutes">%1$d min</string>
 
     <!-- Report screen -->
     <string name="report_title">Informe de sesión</string>

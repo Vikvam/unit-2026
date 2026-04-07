@@ -19,6 +19,9 @@
     <string name="theme_system">Systém</string>
     <string name="theme_light">Světlý</string>
     <string name="theme_dark">Tmavý</string>
+    <string name="settings_duration">Délka sezení</string>
+    <string name="settings_duration_desc">Délka soustředěného sezení v minutách</string>
+    <string name="settings_duration_minutes">%1$d min</string>
 
     <!-- Report screen -->
     <string name="report_title">Přehled sezení</string>

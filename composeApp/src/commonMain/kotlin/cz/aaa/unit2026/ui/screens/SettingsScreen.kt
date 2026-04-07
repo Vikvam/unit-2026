@@ -16,6 +16,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -31,11 +32,15 @@ import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.theme.AppLocale
 import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import cz.aaa.unit2026.ui.theme.SessionSettings
 import cz.aaa.unit2026.ui.theme.ThemeMode
 import cz.aaa.unit2026.ui.theme.ThemeState
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.settings_duration
+import unit2026.composeapp.generated.resources.settings_duration_desc
+import unit2026.composeapp.generated.resources.settings_duration_minutes
 import unit2026.composeapp.generated.resources.settings_language
 import unit2026.composeapp.generated.resources.settings_language_desc
 import unit2026.composeapp.generated.resources.settings_strict_mode
@@ -62,6 +67,7 @@ fun SettingsScreen(
     val spacing = OpenJetTracksTheme.spacing
     val currentMode by ThemeState.mode.collectAsState()
     val currentLocale by LocaleState.locale.collectAsState()
+    val durationMinutes by SessionSettings.durationMinutes.collectAsState()
 
     Column(
         modifier = modifier
@@ -76,6 +82,39 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(spacing.lg))
 
+        // Session duration
+        Text(
+            text = stringResource(Res.string.settings_duration),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text(
+            text = stringResource(Res.string.settings_duration_desc),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(spacing.sm))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Slider(
+                value = durationMinutes.toFloat(),
+                onValueChange = { SessionSettings.setDuration(it.toInt()) },
+                valueRange = 1f..180f,
+                steps = 0,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = stringResource(Res.string.settings_duration_minutes, durationMinutes),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(start = spacing.sm),
+            )
+        }
+
+        Spacer(Modifier.height(spacing.lg))
+
         // Strict mode
         SettingsRow(
             label = stringResource(Res.string.settings_strict_mode),
@@ -83,6 +122,20 @@ fun SettingsScreen(
             checked = false,
             onCheckedChange = { /* TODO */ },
         )
+
+        // TODO: Whitelist — apps/websites allowed during focus sessions
+        // SettingsRow(
+        //     label = stringResource(Res.string.settings_whitelist),
+        //     description = stringResource(Res.string.settings_whitelist_desc),
+        // )
+        // WhitelistEditor(...)
+
+        // TODO: Blocklist — apps/websites always blocked during focus sessions
+        // SettingsRow(
+        //     label = stringResource(Res.string.settings_blocklist),
+        //     description = stringResource(Res.string.settings_blocklist_desc),
+        // )
+        // BlocklistEditor(...)
 
         Spacer(Modifier.height(spacing.lg))
 

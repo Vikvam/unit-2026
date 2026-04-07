@@ -19,6 +19,9 @@
     <string name="theme_system">システム</string>
     <string name="theme_light">ライト</string>
     <string name="theme_dark">ダーク</string>
+    <string name="settings_duration">セッション時間</string>
+    <string name="settings_duration_desc">集中セッションの長さ（分）</string>
+    <string name="settings_duration_minutes">%1$d 分</string>
 
     <!-- Report screen -->
     <string name="report_title">セッションレポート</string>
