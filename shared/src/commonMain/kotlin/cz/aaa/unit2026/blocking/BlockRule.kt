@@ -7,15 +7,15 @@ data class BlockRule(
 )
 
 val DEFAULT_BLOCK_RULES = listOf(
-    BlockRule("YouTube",     "youtube\\.com"),
-    BlockRule("Reddit",      "reddit\\.com"),
-    BlockRule("Twitter / X", "twitter\\.com|\\bx\\.com\\b"),
-    BlockRule("Netflix",     "netflix\\.com"),
-    BlockRule("Twitch",      "twitch\\.tv"),
-    BlockRule("Instagram",   "instagram\\.com"),
-    BlockRule("TikTok",      "tiktok\\.com"),
-    BlockRule("Pornhub",     "pornhub\\.com"),
-    BlockRule("9GAG",        "9gag\\.com"),
-    BlockRule("Steam",       "^steam$"),
-    BlockRule("Lutris",      "^lutris$"),
+    BlockRule("YouTube",     "\\byoutube\\b"),
+    BlockRule("Reddit",      "\\breddit\\b"),
+    BlockRule("Twitter / X", "\\b(twitter|x\\.com)\\b"),
+    BlockRule("Netflix",     "\\bnetflix\\b"),
+    BlockRule("Twitch",      "\\btwitch\\b"),
+    BlockRule("Instagram",   "\\binstagram\\b"),
+    BlockRule("TikTok",      "\\btiktok\\b"),
+    BlockRule("Pornhub",     "\\bpornhub\\b"),
+    BlockRule("9GAG",        "\\b9gag\\b"),
+    BlockRule("Steam",       "^steam"),
+    BlockRule("Lutris",      "^lutris"),
 )
