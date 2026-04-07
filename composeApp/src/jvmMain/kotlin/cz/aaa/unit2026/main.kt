@@ -18,9 +18,9 @@ fun main() = application {
 
     Window(
         onCloseRequest = ::exitApplication,
-        title = "OpenJetTracks — Monitor Demo",
+        title = "OpenJetTracks",
     ) {
-        MonitorDemoApp(enforcer)
+        App()
     }
 
     if (blocked != null) {
