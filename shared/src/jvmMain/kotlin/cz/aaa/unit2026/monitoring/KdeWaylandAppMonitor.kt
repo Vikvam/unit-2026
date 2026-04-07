@@ -26,7 +26,12 @@ class KdeWaylandAppMonitor(
     private val scriptFile: File by lazy { writeScriptToTemp() }
 
     override fun start() {
-        loadKwinScript()
+        try {
+            loadKwinScript()
+        } catch (e: Exception) {
+            // qdbus not available or KWin scripting unavailable — monitor degrades gracefully
+            return
+        }
         tailJob = scope.launch(Dispatchers.IO) {
             tailJournald()
         }
@@ -34,8 +39,12 @@ class KdeWaylandAppMonitor(
 
     override fun stop() {
         tailJob?.cancel()
-        unloadKwinScript()
-        scriptFile.delete()
+        try {
+            unloadKwinScript()
+            scriptFile.delete()
+        } catch (_: Exception) {
+            // best-effort cleanup
+        }
     }
 
     private fun loadKwinScript() {

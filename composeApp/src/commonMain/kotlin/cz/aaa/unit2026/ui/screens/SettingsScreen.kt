@@ -57,9 +57,7 @@ private val ThemeMode.labelRes: StringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    modifier: Modifier = Modifier,
-) {
+fun SettingsScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
     val currentMode by ThemeState.mode.collectAsState()
     val currentLocale by LocaleState.locale.collectAsState()
@@ -146,7 +144,7 @@ fun SettingsScreen(
         SettingsCard {
             SectionLabel("Blocked apps")
             Text(
-                "These apps will be blocked when strict mode is on.",
+                text = "These apps will be blocked when strict mode is on.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -155,7 +153,7 @@ fun SettingsScreen(
 
             if (installedApps.isEmpty()) {
                 Text(
-                    "App list not available on this platform. Desktop blacklist configuration coming soon.",
+                    text = "App list not available on this platform.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -168,7 +166,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            app.appName,
+                            text = app.appName,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
@@ -189,9 +187,7 @@ fun SettingsScreen(
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(OpenJetTracksTheme.spacing.md)) {
