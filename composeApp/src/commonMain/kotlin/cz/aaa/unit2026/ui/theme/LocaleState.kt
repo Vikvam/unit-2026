@@ -1,5 +1,7 @@
 package cz.aaa.unit2026.ui.theme
 
+import cz.aaa.unit2026.AppStorage
+import cz.aaa.unit2026.NoOpAppStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -15,11 +17,27 @@ enum class AppLocale(val code: String?, val displayName: String, val flag: Strin
 }
 
 object LocaleState {
+    private const val KEY = "locale"
+    private var storage: AppStorage = NoOpAppStorage
+
     private val _locale = MutableStateFlow(AppLocale.System)
     val locale: StateFlow<AppLocale> = _locale
+
+    fun init(storage: AppStorage) {
+        this.storage = storage
+        val saved = storage.load(KEY)
+        if (saved != null) {
+            runCatching {
+                val locale = AppLocale.valueOf(saved)
+                applyLocale(locale.code)
+                _locale.value = locale
+            }
+        }
+    }
 
     fun setLocale(locale: AppLocale) {
         applyLocale(locale.code)
         _locale.value = locale
+        runCatching { storage.save(KEY, locale.name) }
     }
 }

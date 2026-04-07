@@ -1,5 +1,8 @@
 package cz.aaa.unit2026.session
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class AppUsageStat(
     val appId: String,
     val appName: String,

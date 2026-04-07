@@ -12,6 +12,8 @@ import cz.aaa.unit2026.blocking.DesktopBlockingEnforcer
 import cz.aaa.unit2026.monitoring.KdeWaylandAppMonitor
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.components.BlockingOverlay
+import cz.aaa.unit2026.ui.theme.LocaleState
+import cz.aaa.unit2026.ui.theme.ThemeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
@@ -21,10 +23,14 @@ private const val TITLE_BAR_PX = 56f
 fun main() {
     val scope = CoroutineScope(Dispatchers.Default)
     val enforcer = DesktopBlockingEnforcer()
+    val storage = JvmAppStorage()
 
+    ThemeState.init(storage)
+    LocaleState.init(storage)
     FocusSessionState.init(
         monitor = KdeWaylandAppMonitor(scope),
         enforcer = enforcer,
+        storage = storage,
     )
     // Desktop app list: placeholder — desktop blacklist config coming soon
     FocusSessionState.setInstalledApps(emptyList())
