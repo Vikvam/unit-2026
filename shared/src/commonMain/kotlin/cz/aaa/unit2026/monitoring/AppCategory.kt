@@ -102,6 +102,7 @@ object AppCategory {
         "flipboard.app" to NEWS,
 
         // Audio
+        "com.google.android.apps.podcasts" to AUDIO,
         "com.spotify.music" to AUDIO,
         "com.google.android.apps.youtube.music" to AUDIO,
         "com.apple.android.music" to AUDIO,

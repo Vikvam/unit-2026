@@ -10,6 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import cz.aaa.unit2026.ui.util.decodeImageBitmap
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -308,9 +314,23 @@ private fun CategoryGroup(
                         .fillMaxWidth()
                         .clickable { onToggle(app.appId, !isBlocked) }
                         .padding(vertical = spacing.xs),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                 ) {
+                    // App icon
+                    val icon = app.iconBytes?.let { decodeImageBitmap(it) }
+                    if (icon != null) {
+                        Image(
+                            bitmap = icon,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                        )
+                    } else {
+                        Spacer(Modifier.size(32.dp))
+                    }
+
                     Text(
                         text = app.appName,
                         style = MaterialTheme.typography.bodyMedium,
