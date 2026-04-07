@@ -11,6 +11,8 @@ data class ActiveApp(
     val capturedAtMs: Long,
     /** Window geometry — Desktop only, null on Android. */
     val geometry: WindowGeometry? = null,
+    /** App category — Android only (AppCategory constants), null on Desktop. */
+    val category: Int? = null,
 )
 
 data class WindowGeometry(val x: Int, val y: Int, val width: Int, val height: Int, val scale: Float = 1f)

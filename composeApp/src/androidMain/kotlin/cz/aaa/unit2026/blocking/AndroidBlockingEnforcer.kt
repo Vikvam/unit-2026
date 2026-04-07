@@ -27,7 +27,6 @@ class AndroidBlockingEnforcer(private val context: Context) : BlockingEnforcer {
     }
 
     override fun block(app: ActiveApp) {
-        if (_blockedApp.value?.appId == app.appId) return
         _blockedApp.value = app
         FocusAccessibilityService.sendHome()
         showNotification(app)

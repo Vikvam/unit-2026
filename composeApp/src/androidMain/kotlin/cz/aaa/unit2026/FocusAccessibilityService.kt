@@ -2,10 +2,12 @@ package cz.aaa.unit2026
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.pm.PackageManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.ActiveAppBus
+import cz.aaa.unit2026.monitoring.AppCategory
 
 class FocusAccessibilityService : AccessibilityService() {
 
@@ -34,12 +36,15 @@ class FocusAccessibilityService : AccessibilityService() {
 
         val windowTitle = resolveWindowTitle(packageName, event)
 
+        val (appName, category) = resolveAppInfo(packageName)
+
         ActiveAppBus.emit(
             ActiveApp(
                 appId = packageName,
-                appName = packageName.substringAfterLast('.'),
+                appName = appName,
                 windowTitle = windowTitle,
                 capturedAtMs = System.currentTimeMillis(),
+                category = category,
             )
         )
     }
@@ -59,6 +64,18 @@ class FocusAccessibilityService : AccessibilityService() {
             ?.text
             ?.toString()
             ?.takeIf { it.isNotEmpty() }
+    }
+
+    /** Returns Pair(humanLabel, category) for the given package. */
+    private fun resolveAppInfo(packageName: String): Pair<String, Int> {
+        return try {
+            val info = packageManager.getApplicationInfo(packageName, 0)
+            val label = packageManager.getApplicationLabel(info).toString()
+            val category = info.category.takeIf { it >= 0 } ?: AppCategory.UNDEFINED
+            label to category
+        } catch (e: PackageManager.NameNotFoundException) {
+            packageName.substringAfterLast('.') to AppCategory.UNDEFINED
+        }
     }
 
     override fun onInterrupt() = Unit
