@@ -81,10 +81,12 @@ fun TimerScreen(modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        // When idle, show the configured duration instead of the holder's default "25:00".
+        val idleLabel = "%d:00".format(durationMinutes)
         TimerRing(
             progress = uiState.progress,
             state = uiState.timerState,
-            label = uiState.label,
+            label = if (uiState.timerState == TimerState.Idle) idleLabel else uiState.label,
             subtitle = if (canConfigure) stringResource(Res.string.timer_tap_hint) else null,
             modifier = Modifier
                 .scale(scale)

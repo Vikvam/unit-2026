@@ -46,14 +46,20 @@ class TimerStateHolder(
         }
 
         // Tick every 500 ms to keep the displayed label smooth.
-        // Skipped when the session is paused — time is frozen at pausedAtMs.
+        // On natural expiry, calls stopSession() so the sync chain fires (report, blocking).
         scope.launch {
             while (true) {
                 delay(500L)
                 val session = client.sessionState.value ?: continue
-                if (session.pausedAtMs != null) continue
-                _uiState.update { current ->
-                    computeState(session, currentTimeMs()).copy(isConnected = current.isConnected)
+                if (session.stoppedAtMs != null) continue   // already handled
+                if (session.pausedAtMs != null) continue    // time is frozen
+                val now = currentTimeMs()
+                if (now >= session.targetEndAtMs) {
+                    client.stopSession()                    // triggers collect → Finished state
+                } else {
+                    _uiState.update { current ->
+                        computeState(session, now).copy(isConnected = current.isConnected)
+                    }
                 }
             }
         }
