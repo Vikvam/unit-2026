@@ -1,6 +1,8 @@
 package cz.aaa.unit2026.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,6 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,6 +31,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
 import cz.aaa.unit2026.ui.components.TimerRing
 import cz.aaa.unit2026.ui.components.TimerState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
@@ -35,14 +42,12 @@ import org.jetbrains.compose.resources.stringResource
 import unit2026.composeapp.generated.resources.Res
 import unit2026.composeapp.generated.resources.settings_duration
 import unit2026.composeapp.generated.resources.settings_duration_minutes
+import unit2026.composeapp.generated.resources.settings_strict_mode
+import unit2026.composeapp.generated.resources.settings_strict_mode_desc
 import unit2026.composeapp.generated.resources.timer_start
 import unit2026.composeapp.generated.resources.timer_stop
+import unit2026.composeapp.generated.resources.timer_tap_hint
 
-/**
- * Main screen — shows the session timer and start/pause/stop controls.
- *
- * TODO: wire to a shared ViewModel once :shared exposes FocusSession state.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimerScreen(
@@ -50,13 +55,20 @@ fun TimerScreen(
 ) {
     val spacing = OpenJetTracksTheme.spacing
 
-    // Placeholder state — will be replaced by ViewModel collection
     val durationMinutes by SessionSettings.durationMinutes.collectAsState()
     val progress = 0f
     val timerState = TimerState.Idle
     val label = "%d:%02d".format(durationMinutes, 0)
 
     var showSessionParams by remember { mutableStateOf(false) }
+
+    // Press-down scale effect on the ring
+    var pressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.95f else 1f,
+        animationSpec = tween(durationMillis = 100),
+        label = "ringScale",
+    )
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -67,23 +79,39 @@ fun TimerScreen(
             progress = progress,
             state = timerState,
             label = label,
-            modifier = Modifier.clickable { showSessionParams = true },
+            subtitle = stringResource(Res.string.timer_tap_hint),
+            modifier = Modifier
+                .scale(scale)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            pressed = true
+                            tryAwaitRelease()
+                            pressed = false
+                        },
+                        onTap = { showSessionParams = true },
+                    )
+                },
         )
 
-        Spacer(Modifier.height(spacing.xl))
+        Spacer(Modifier.height(spacing.xxl))
 
-        Row {
-            Button(onClick = { /* TODO: start / pause */ }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+            Button(
+                onClick = { /* TODO: start / pause */ },
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.height(48.dp).width(120.dp),
+            ) {
                 Text(stringResource(Res.string.timer_start))
             }
 
-            Spacer(Modifier.width(spacing.md))
-
             OutlinedButton(
                 onClick = { /* TODO: stop session */ },
+                shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
+                modifier = Modifier.height(48.dp).width(120.dp),
             ) {
                 Text(stringResource(Res.string.timer_stop))
             }
@@ -109,39 +137,66 @@ private fun SessionParamsSheet(durationMinutes: Int) {
             .fillMaxWidth()
             .padding(horizontal = spacing.lg)
             .padding(bottom = spacing.xl),
+        verticalArrangement = Arrangement.spacedBy(spacing.lg),
     ) {
-        Text(
-            text = stringResource(Res.string.settings_duration),
-            style = MaterialTheme.typography.titleMedium,
-        )
-
-        Spacer(Modifier.height(spacing.sm))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Slider(
-                value = durationMinutes.toFloat(),
-                onValueChange = { SessionSettings.setDuration(it.toInt()) },
-                valueRange = 1f..180f,
-                modifier = Modifier.weight(1f),
-            )
+        // Duration
+        Column {
             Text(
-                text = stringResource(Res.string.settings_duration_minutes, durationMinutes),
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(start = spacing.sm),
+                text = stringResource(Res.string.settings_duration),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
             )
+
+            Spacer(Modifier.height(spacing.sm))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Slider(
+                    value = durationMinutes.toFloat(),
+                    onValueChange = { SessionSettings.setDuration(it.toInt()) },
+                    valueRange = 1f..180f,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = stringResource(Res.string.settings_duration_minutes, durationMinutes),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(start = spacing.sm),
+                )
+            }
+        }
+
+        // Strict mode
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.settings_strict_mode),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Text(
+                    text = stringResource(Res.string.settings_strict_mode_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = false, onCheckedChange = { /* TODO */ })
         }
 
         // TODO: Whitelist — apps/websites allowed during focus sessions
-        // Spacer(Modifier.height(spacing.lg))
-        // Text("Whitelist", style = MaterialTheme.typography.titleMedium)
-        // WhitelistEditor(...)
+        // Column {
+        //     Text("Whitelist", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        //     WhitelistEditor(...)
+        // }
 
         // TODO: Blocklist — apps/websites always blocked during focus sessions
-        // Spacer(Modifier.height(spacing.lg))
-        // Text("Blocklist", style = MaterialTheme.typography.titleMedium)
-        // BlocklistEditor(...)
+        // Column {
+        //     Text("Blocklist", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+        //     BlocklistEditor(...)
+        // }
     }
 }

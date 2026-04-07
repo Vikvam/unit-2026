@@ -7,6 +7,7 @@
     <!-- Timer screen -->
     <string name="timer_start">Iniciar</string>
     <string name="timer_stop">Detener</string>
+    <string name="timer_tap_hint">toca para configurar</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Ajustes</string>
