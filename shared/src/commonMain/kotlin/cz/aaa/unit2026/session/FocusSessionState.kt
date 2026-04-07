@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
  * Provided at startup by each platform:
  * - monitor: ForegroundAppMonitor (KDE/Windows on desktop, AccessibilityService on Android)
  * - enforcer: BlockingEnforcer (overlay on desktop, home action on Android)
- * - installedApps: populated by platform (Android: PackageManager, Desktop: empty — see placeholder in SettingsScreen)
+ * - installedApps: populated by platform (Android: PackageManager, Desktop: empty)
  */
 object FocusSessionState {
 
@@ -29,10 +30,19 @@ object FocusSessionState {
     private var monitor: ForegroundAppMonitor? = null
     private var enforcer: BlockingEnforcer? = null
     private var monitorJob: Job? = null
+    private var timerJob: Job? = null
 
-    // --- Timer ---
+    // --- Session state ---
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+    private val _isPaused = MutableStateFlow(false)
+    val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
+
+    private val _remainingSeconds = MutableStateFlow(0L)
+    val remainingSeconds: StateFlow<Long> = _remainingSeconds.asStateFlow()
+
+    private val _durationSeconds = MutableStateFlow(25L * 60)
 
     // --- Blocking ---
     private val _isStrictMode = MutableStateFlow(false)
@@ -59,15 +69,69 @@ object FocusSessionState {
         _installedApps.value = apps
     }
 
+    fun setDurationMinutes(minutes: Int) {
+        _durationSeconds.value = minutes.toLong() * 60
+    }
+
     // --- Timer controls ---
 
     fun startSession() {
         if (_isRunning.value) return
         _isRunning.value = true
+        _isPaused.value = false
+        _remainingSeconds.value = _durationSeconds.value
+
+        startTimer()
+        startMonitoring()
+    }
+
+    fun pauseSession() {
+        if (!_isRunning.value || _isPaused.value) return
+        _isPaused.value = true
+        timerJob?.cancel()
+        timerJob = null
+        enforcer?.unblock()
+        _blockedApp.value = null
+    }
+
+    fun resumeSession() {
+        if (!_isRunning.value || !_isPaused.value) return
+        _isPaused.value = false
+        startTimer()
+    }
+
+    fun stopSession() {
+        _isRunning.value = false
+        _isPaused.value = false
+        _remainingSeconds.value = 0L
+        timerJob?.cancel()
+        timerJob = null
+        monitorJob?.cancel()
+        monitorJob = null
+        monitor?.stop()
+        enforcer?.unblock()
+        _blockedApp.value = null
+    }
+
+    private fun startTimer() {
+        timerJob?.cancel()
+        timerJob = scope.launch {
+            while (_remainingSeconds.value > 0) {
+                delay(1000L)
+                if (!_isPaused.value) {
+                    _remainingSeconds.value = (_remainingSeconds.value - 1).coerceAtLeast(0)
+                }
+            }
+            // Session finished naturally
+            stopSession()
+        }
+    }
+
+    private fun startMonitoring() {
         monitor?.start()
         monitorJob = scope.launch {
             monitor?.activeApp?.collect { app ->
-                if (_isStrictMode.value && app.appId !in SELF_APP_IDS) {
+                if (_isStrictMode.value && !_isPaused.value && app.appId !in SELF_APP_IDS) {
                     if (app.appId in _blacklist.value) {
                         enforcer?.block(app)
                         _blockedApp.value = app
@@ -75,15 +139,6 @@ object FocusSessionState {
                 }
             }
         }
-    }
-
-    fun stopSession() {
-        _isRunning.value = false
-        monitorJob?.cancel()
-        monitorJob = null
-        monitor?.stop()
-        enforcer?.unblock()
-        _blockedApp.value = null
     }
 
     // --- Settings ---

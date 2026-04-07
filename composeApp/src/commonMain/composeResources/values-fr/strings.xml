@@ -7,6 +7,8 @@
     <!-- Timer screen -->
     <string name="timer_start">Démarrer</string>
     <string name="timer_stop">Arrêter</string>
+    <string name="timer_pause">Pause</string>
+    <string name="timer_resume">Reprendre</string>
     <string name="timer_tap_hint">appuyez pour configurer</string>
 
     <!-- Settings screen -->

@@ -7,6 +7,8 @@
     <!-- Timer screen -->
     <string name="timer_start">Spustit</string>
     <string name="timer_stop">Zastavit</string>
+    <string name="timer_pause">Pauza</string>
+    <string name="timer_resume">Pokračovat</string>
     <string name="timer_tap_hint">klepnutím nastavíte</string>
 
     <!-- Settings screen -->

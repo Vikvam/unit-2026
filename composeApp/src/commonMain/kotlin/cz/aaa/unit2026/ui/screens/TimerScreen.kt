@@ -45,6 +45,8 @@ import unit2026.composeapp.generated.resources.settings_duration
 import unit2026.composeapp.generated.resources.settings_duration_minutes
 import unit2026.composeapp.generated.resources.settings_strict_mode
 import unit2026.composeapp.generated.resources.settings_strict_mode_desc
+import unit2026.composeapp.generated.resources.timer_pause
+import unit2026.composeapp.generated.resources.timer_resume
 import unit2026.composeapp.generated.resources.timer_start
 import unit2026.composeapp.generated.resources.timer_stop
 import unit2026.composeapp.generated.resources.timer_tap_hint
@@ -58,10 +60,35 @@ fun TimerScreen(
 
     val durationMinutes by SessionSettings.durationMinutes.collectAsState()
     val isRunning by FocusSessionState.isRunning.collectAsState()
-    val progress = 0f
-    val timerState = if (isRunning) TimerState.Running else TimerState.Idle
-    val label = "%d:%02d".format(durationMinutes, 0)
+    val isPaused by FocusSessionState.isPaused.collectAsState()
+    val remainingSeconds by FocusSessionState.remainingSeconds.collectAsState()
 
+    val timerState = when {
+        isRunning && isPaused -> TimerState.Paused
+        isRunning -> TimerState.Running
+        else -> TimerState.Idle
+    }
+
+    val totalSeconds = durationMinutes * 60L
+    val progress = if (isRunning && totalSeconds > 0) {
+        1f - (remainingSeconds.toFloat() / totalSeconds)
+    } else {
+        0f
+    }
+
+    val displayMinutes: Long
+    val displaySeconds: Long
+    if (isRunning) {
+        displayMinutes = remainingSeconds / 60
+        displaySeconds = remainingSeconds % 60
+    } else {
+        displayMinutes = durationMinutes.toLong()
+        displaySeconds = 0L
+    }
+    val label = "%d:%02d".format(displayMinutes, displaySeconds)
+
+    // Bottom sheet only opens when idle or paused
+    val canConfigure = !isRunning || isPaused
     var showSessionParams by remember { mutableStateOf(false) }
 
     // Press-down scale effect on the ring
@@ -81,41 +108,69 @@ fun TimerScreen(
             progress = progress,
             state = timerState,
             label = label,
-            subtitle = stringResource(Res.string.timer_tap_hint),
+            subtitle = if (canConfigure) stringResource(Res.string.timer_tap_hint) else null,
             modifier = Modifier
                 .scale(scale)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            pressed = true
-                            tryAwaitRelease()
-                            pressed = false
-                        },
-                        onTap = { showSessionParams = true },
-                    )
+                .pointerInput(canConfigure) {
+                    if (canConfigure) {
+                        detectTapGestures(
+                            onPress = {
+                                pressed = true
+                                tryAwaitRelease()
+                                pressed = false
+                            },
+                            onTap = { showSessionParams = true },
+                        )
+                    }
                 },
         )
 
         Spacer(Modifier.height(spacing.xxl))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
-            Button(
-                onClick = { FocusSessionState.startSession() },
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier.height(48.dp).width(120.dp),
-            ) {
-                Text(stringResource(Res.string.timer_start))
-            }
+        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            if (!isRunning) {
+                // Idle: show Start
+                Button(
+                    onClick = {
+                        FocusSessionState.setDurationMinutes(durationMinutes)
+                        FocusSessionState.startSession()
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier.height(48.dp).width(120.dp),
+                ) {
+                    Text(stringResource(Res.string.timer_start))
+                }
+            } else {
+                // Running or paused: show Pause/Resume + Stop
+                Button(
+                    onClick = {
+                        if (isPaused) FocusSessionState.resumeSession()
+                        else FocusSessionState.pauseSession()
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = if (isPaused) ButtonDefaults.buttonColors()
+                    else ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                    modifier = Modifier.height(48.dp).width(120.dp),
+                ) {
+                    Text(
+                        if (isPaused) stringResource(Res.string.timer_resume)
+                        else stringResource(Res.string.timer_pause)
+                    )
+                }
 
-            OutlinedButton(
-                onClick = { FocusSessionState.stopSession() },
-                shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                ),
-                modifier = Modifier.height(48.dp).width(120.dp),
-            ) {
-                Text(stringResource(Res.string.timer_stop))
+                OutlinedButton(
+                    onClick = { FocusSessionState.stopSession() },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                    modifier = Modifier.height(48.dp).width(120.dp),
+                ) {
+                    Text(stringResource(Res.string.timer_stop))
+                }
             }
         }
     }
@@ -133,6 +188,7 @@ fun TimerScreen(
 @Composable
 private fun SessionParamsSheet(durationMinutes: Int) {
     val spacing = OpenJetTracksTheme.spacing
+    val isRunning by FocusSessionState.isRunning.collectAsState()
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
 
     Column(
@@ -160,6 +216,7 @@ private fun SessionParamsSheet(durationMinutes: Int) {
                     value = durationMinutes.toFloat(),
                     onValueChange = { SessionSettings.setDuration(it.toInt()) },
                     valueRange = 1f..180f,
+                    enabled = !isRunning,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
