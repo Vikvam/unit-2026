@@ -160,6 +160,7 @@ class KtorTrackingClient(
             is ServerMessage.SessionResumed  -> _sessionState.value = message.session
             is ServerMessage.SessionState    -> applyServerState(message.session)
         }
+        log.info("[WS] state after message: ${describeState(_sessionState.value)}")
     }
 
     /**
@@ -182,11 +183,15 @@ class KtorTrackingClient(
         if (serverSession != null && serverSession.targetEndAtMs > now) {
             // Server has a live session — adopt it
             _sessionState.value = serverSession
+            log.info("[WS] reconcile: adopted server session ${describeState(serverSession)}")
         } else {
             // Server has no active session — push active local session if we have one
             val local = _sessionState.value
             if (local != null && local.stoppedAtMs == null && local.targetEndAtMs > now) {
+                log.info("[WS] reconcile: pushing local session to server ${describeState(local)}")
                 sendMessage(ClientMessage.SessionStart(local.startedAtMs, local.targetEndAtMs))
+            } else {
+                log.info("[WS] reconcile: no active session on either side")
             }
             // Do not null out finished/stopped local sessions — Report screen needs them.
         }
@@ -205,5 +210,18 @@ class KtorTrackingClient(
         val text = trackingJson.encodeToString<ClientMessage>(message)
         log.info("[WS] >> $text")
         try { channel.send(Frame.Text(text)) } catch (_: Exception) { /* socket closed */ }
+    }
+
+    private fun describeState(session: TrackingSession?): String {
+        if (session == null) return "null"
+        val now = currentTimeMs()
+        val remainingSec = (session.targetEndAtMs - now) / 1000
+        val status = when {
+            session.stoppedAtMs != null -> "stopped"
+            session.pausedAtMs != null  -> "paused"
+            remainingSec <= 0           -> "expired"
+            else                        -> "running(${remainingSec}s left)"
+        }
+        return "Session(id=${session.sessionId.take(8)}, $status)"
     }
 }
