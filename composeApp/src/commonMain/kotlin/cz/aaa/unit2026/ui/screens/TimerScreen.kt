@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.components.TimerRing
 import cz.aaa.unit2026.ui.components.TimerState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
@@ -56,8 +57,9 @@ fun TimerScreen(
     val spacing = OpenJetTracksTheme.spacing
 
     val durationMinutes by SessionSettings.durationMinutes.collectAsState()
+    val isRunning by FocusSessionState.isRunning.collectAsState()
     val progress = 0f
-    val timerState = TimerState.Idle
+    val timerState = if (isRunning) TimerState.Running else TimerState.Idle
     val label = "%d:%02d".format(durationMinutes, 0)
 
     var showSessionParams by remember { mutableStateOf(false) }
@@ -98,7 +100,7 @@ fun TimerScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
             Button(
-                onClick = { /* TODO: start / pause */ },
+                onClick = { FocusSessionState.startSession() },
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier.height(48.dp).width(120.dp),
             ) {
@@ -106,7 +108,7 @@ fun TimerScreen(
             }
 
             OutlinedButton(
-                onClick = { /* TODO: stop session */ },
+                onClick = { FocusSessionState.stopSession() },
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = MaterialTheme.colorScheme.error,
@@ -131,6 +133,7 @@ fun TimerScreen(
 @Composable
 private fun SessionParamsSheet(durationMinutes: Int) {
     val spacing = OpenJetTracksTheme.spacing
+    val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
 
     Column(
         modifier = Modifier
@@ -184,19 +187,13 @@ private fun SessionParamsSheet(durationMinutes: Int) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Switch(checked = false, onCheckedChange = { /* TODO */ })
+            Switch(
+                checked = isStrictMode,
+                onCheckedChange = { FocusSessionState.setStrictMode(it) },
+            )
         }
 
         // TODO: Whitelist — apps/websites allowed during focus sessions
-        // Column {
-        //     Text("Whitelist", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-        //     WhitelistEditor(...)
-        // }
-
         // TODO: Blocklist — apps/websites always blocked during focus sessions
-        // Column {
-        //     Text("Blocklist", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-        //     BlocklistEditor(...)
-        // }
     }
 }

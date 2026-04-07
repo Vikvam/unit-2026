@@ -18,6 +18,11 @@ Load a KWin JavaScript via D-Bus `/Scripting`, connect to `workspace.windowActiv
 | App identifier | `window.resourceClass` | `firefox`, `org.kde.konsole` |
 | Window title | `window.caption` | `"YouTube — Mozilla Firefox"` |
 | Process ID | `window.pid` | `2116` |
+| Geometry | `window.frameGeometry` | `{x, y, width, height}` — in **logical pixels** (already divided by scale) |
+| Scale factor | `window.output.devicePixelRatio` | `1.5` on 150% display |
+
+**Pixel space note:**
+KWin `frameGeometry` returns **logical pixels** (physical ÷ scale). Compose for Desktop runs via XWayland which works in **physical pixels**. To position an overlay window correctly: multiply KWin coordinates by `devicePixelRatio` before passing to `WindowState`.
 
 **Script:**
 ```javascript
