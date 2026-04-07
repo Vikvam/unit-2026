@@ -1,0 +1,33 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_timer">Minuteur</string>
+    <string name="nav_settings">Paramètres</string>
+    <string name="nav_report">Rapport</string>
+
+    <!-- Timer screen -->
+    <string name="timer_start">Démarrer</string>
+    <string name="timer_stop">Arrêter</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_strict_mode">Mode strict</string>
+    <string name="settings_strict_mode_desc">Bloquer toutes les applications non autorisées pendant les sessions</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_desc">Clair, sombre ou selon le système</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_desc">Choisir la langue de l\'application</string>
+    <string name="theme_system">Système</string>
+    <string name="theme_light">Clair</string>
+    <string name="theme_dark">Sombre</string>
+
+    <!-- Report screen -->
+    <string name="report_title">Rapport de session</string>
+    <string name="report_focused">Concentré : %1$s</string>
+    <string name="report_distracted">Distrait : %1$s</string>
+    <string name="report_total">%1$s session totale</string>
+    <string name="report_timeline">Chronologie de la session</string>
+
+    <!-- Blocking overlay -->
+    <string name="blocking_title">Restez concentré !</string>
+    <string name="blocking_message">%1$s est bloquée pendant votre session.</string>
+</resources>

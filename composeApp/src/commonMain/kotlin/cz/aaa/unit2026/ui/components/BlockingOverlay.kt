@@ -13,6 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import org.jetbrains.compose.resources.stringResource
+import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.blocking_message
+import unit2026.composeapp.generated.resources.blocking_title
 
 /**
  * Full-screen overlay shown when the user opens a distracting app/website.
@@ -38,7 +42,7 @@ fun BlockingOverlay(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Stay focused!",
+            text = stringResource(Res.string.blocking_title),
             style = MaterialTheme.typography.displaySmall,
             color = focus.distracted,
         )
@@ -46,7 +50,7 @@ fun BlockingOverlay(
         Spacer(Modifier.height(spacing.md))
 
         Text(
-            text = "$appName is blocked during your session.",
+            text = stringResource(Res.string.blocking_message, appName),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )

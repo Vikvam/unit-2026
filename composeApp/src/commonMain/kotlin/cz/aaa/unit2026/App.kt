@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import cz.aaa.unit2026.ui.screens.HomeScreen
+import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 import cz.aaa.unit2026.ui.theme.ThemeState
 
@@ -16,6 +17,9 @@ import cz.aaa.unit2026.ui.theme.ThemeState
 @Preview
 fun App() {
     val themeMode by ThemeState.mode.collectAsState()
+    // Collected so recomposition is triggered when locale changes.
+    // The platform locale is applied synchronously in LocaleState.setLocale().
+    LocaleState.locale.collectAsState()
 
     OpenJetTracksTheme(themeMode = themeMode) {
         Surface(modifier = Modifier.fillMaxSize().safeContentPadding()) {

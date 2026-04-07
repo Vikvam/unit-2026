@@ -20,7 +20,7 @@ Unlike passive Pomodoro timers, this app polls OS-level APIs to detect unauthori
 - **Offline Resilience** — sessions tracked locally, synced when connection is available
 - **Strict Mode** — configurable; prevents usage of non-whitelisted apps entirely
 - **Light/Dark Mode**
-- **Localization** — Esperanto and Emoji/Japanese language support
+- **Localization** — English, Czech, Slovak, French, Spanish, Esperanto, Japanese
 - **Reports** — post-session review showing whether focus was respected
 
 ---

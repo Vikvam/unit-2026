@@ -1,0 +1,33 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_timer">Temporizilo</string>
+    <string name="nav_settings">Agordoj</string>
+    <string name="nav_report">Raporto</string>
+
+    <!-- Timer screen -->
+    <string name="timer_start">Ekigi</string>
+    <string name="timer_stop">Halti</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Agordoj</string>
+    <string name="settings_strict_mode">Strikta reĝimo</string>
+    <string name="settings_strict_mode_desc">Bloki ĉiujn nepermesitajn apojn dum seancoj</string>
+    <string name="settings_theme">Etoso</string>
+    <string name="settings_theme_desc">Hela, malhela aŭ laŭ la sistemo</string>
+    <string name="settings_language">Lingvo</string>
+    <string name="settings_language_desc">Elektu la lingvon de la aplikaĵo</string>
+    <string name="theme_system">Sistemo</string>
+    <string name="theme_light">Hela</string>
+    <string name="theme_dark">Malhela</string>
+
+    <!-- Report screen -->
+    <string name="report_title">Seanca raporto</string>
+    <string name="report_focused">Koncentriĝo: %1$s</string>
+    <string name="report_distracted">Distrita: %1$s</string>
+    <string name="report_total">%1$s tuta seanco</string>
+    <string name="report_timeline">Seanca templinio</string>
+
+    <!-- Blocking overlay -->
+    <string name="blocking_title">Restu koncentriĝinta!</string>
+    <string name="blocking_message">%1$s estas blokita dum via seanco.</string>
+</resources>

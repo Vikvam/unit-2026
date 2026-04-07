@@ -1,0 +1,33 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_timer">タイマー</string>
+    <string name="nav_settings">設定</string>
+    <string name="nav_report">レポート</string>
+
+    <!-- Timer screen -->
+    <string name="timer_start">開始</string>
+    <string name="timer_stop">停止</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">設定</string>
+    <string name="settings_strict_mode">厳格モード</string>
+    <string name="settings_strict_mode_desc">セッション中に許可されていないアプリをすべてブロック</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_desc">ライト、ダーク、またはシステムに従う</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_desc">アプリの言語を選択</string>
+    <string name="theme_system">システム</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+
+    <!-- Report screen -->
+    <string name="report_title">セッションレポート</string>
+    <string name="report_focused">集中: %1$s</string>
+    <string name="report_distracted">注意散漫: %1$s</string>
+    <string name="report_total">%1$s 合計セッション</string>
+    <string name="report_timeline">セッションタイムライン</string>
+
+    <!-- Blocking overlay -->
+    <string name="blocking_title">集中してください！</string>
+    <string name="blocking_message">%1$s はセッション中にブロックされています。</string>
+</resources>

@@ -20,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.navigation.NavigationDestination
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
@@ -53,8 +54,8 @@ private fun CompactHome(
                     NavigationBarItem(
                         selected = selected == dest,
                         onClick = { onSelect(dest) },
-                        icon = { Icon(dest.icon, contentDescription = dest.label) },
-                        label = { Text(dest.label) },
+                        icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
+                        label = { Text(stringResource(dest.labelRes)) },
                     )
                 }
             }
@@ -82,8 +83,8 @@ private fun ExpandedHome(
                 NavigationRailItem(
                     selected = selected == dest,
                     onClick = { onSelect(dest) },
-                    icon = { Icon(dest.icon, contentDescription = dest.label) },
-                    label = { Text(dest.label) },
+                    icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
+                    label = { Text(stringResource(dest.labelRes)) },
                 )
             }
         }

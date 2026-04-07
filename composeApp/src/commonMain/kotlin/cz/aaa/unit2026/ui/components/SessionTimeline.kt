@@ -16,6 +16,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import org.jetbrains.compose.resources.stringResource
+import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.report_timeline
 
 /**
  * A single segment in the session timeline.
@@ -45,7 +48,7 @@ fun SessionTimeline(
 
     Column(modifier = modifier.padding(horizontal = OpenJetTracksTheme.spacing.md)) {
         Text(
-            text = "Session timeline",
+            text = stringResource(Res.string.report_timeline),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onBackground,
         )
