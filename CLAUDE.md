@@ -156,9 +156,51 @@ A standalone JVM application (not multiplatform). Runs a lightweight Ktor server
 
 ---
 
+## UI Architecture
+
+Material 3 as the base, with a thin app design layer on top. Custom composables only where M3 falls short. Compose Multiplatform renders every pixel itself via Skia — no native widgets — so UI is identical across Android, Desktop, and Web.
+
+### Package Structure (`:composeApp/commonMain`)
+
+```
+ui/
+  theme/          # OpenJetTracksTheme, FocusColors, Spacing — wraps M3 MaterialTheme
+  components/     # App-specific composables: TimerRing, BlockingOverlay, SessionTimeline
+  screens/        # Full screens: TimerScreen, SettingsScreen, ReportScreen
+```
+
+### Theme Layer
+
+- `OpenJetTracksTheme` wraps `MaterialTheme` and provides two extra `CompositionLocal`s:
+  - `FocusColors` — semantic colors for session state (active/green, distracted/red, idle/blue, warning/amber) with light and dark variants
+  - `Spacing` — consistent spacing scale (xs=4, sm=8, md=16, lg=24, xl=32, xxl=48)
+- Access via `OpenJetTracksTheme.focus.active` and `OpenJetTracksTheme.spacing.lg`
+- All screens and components use the theme — no hardcoded colors or spacing values
+
+### Custom Components
+
+| Component | Purpose |
+|---|---|
+| `TimerRing` | Circular progress arc with session state coloring + centered time label. Drawn with Compose `Canvas`. |
+| `BlockingOverlay` | Full-screen intervention shown when user opens a distracting app. Uses `FocusColors.distracted`. |
+| `SessionTimeline` | Horizontal bar of focused/distracted segments for the post-session report. |
+
+### UI Rules
+
+- Use M3 components (Button, Card, Switch, etc.) for standard UI — do not re-implement them
+- No third-party component libraries
+- No business logic in `@Composable` functions — composables render state and emit events only
+- Platform entry points (`MainActivity`, desktop `Window`, web `ComposeViewport`) remain thin
+
+---
+
 ## Server
 
 Lightweight Ktor server for session synchronization between Android and Desktop clients. Stateless where possible; sessions are owned locally and synced, not streamed live.
+
+### Storage
+
+In-memory only (e.g. `ConcurrentHashMap`). Clients are the sole persistent source of truth — the server holds transient sync state that is rebuilt on reconnect. No server-side database.
 
 ---
 
