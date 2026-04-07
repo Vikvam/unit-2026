@@ -45,6 +45,8 @@ import unit2026.composeapp.generated.resources.settings_duration
 import unit2026.composeapp.generated.resources.settings_duration_minutes
 import unit2026.composeapp.generated.resources.settings_strict_mode
 import unit2026.composeapp.generated.resources.settings_strict_mode_desc
+import unit2026.composeapp.generated.resources.timer_strict_off
+import unit2026.composeapp.generated.resources.timer_strict_on
 import unit2026.composeapp.generated.resources.timer_pause
 import unit2026.composeapp.generated.resources.timer_resume
 import unit2026.composeapp.generated.resources.timer_start
@@ -59,6 +61,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
     val isRunning by FocusSessionState.isRunning.collectAsState()
     val isPaused by FocusSessionState.isPaused.collectAsState()
     val remainingSeconds by FocusSessionState.remainingSeconds.collectAsState()
+    val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
 
     val timerState = when {
         isRunning && isPaused -> TimerState.Paused
@@ -113,7 +116,19 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                 },
         )
 
-        Spacer(Modifier.height(spacing.xxl))
+        if (isRunning) {
+            Spacer(Modifier.height(spacing.md))
+
+            Text(
+                text = if (isStrictMode) stringResource(Res.string.timer_strict_on)
+                       else stringResource(Res.string.timer_strict_off),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isStrictMode) OpenJetTracksTheme.focus.active
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        Spacer(Modifier.height(spacing.xl))
 
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             if (!isRunning) {

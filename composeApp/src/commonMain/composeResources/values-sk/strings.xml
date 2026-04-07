@@ -10,6 +10,8 @@
     <string name="timer_pause">Pauza</string>
     <string name="timer_resume">Pokračovať</string>
     <string name="timer_tap_hint">klepnutím nastavíte</string>
+    <string name="timer_strict_on">Prísny režim zapnutý</string>
+    <string name="timer_strict_off">Prísny režim vypnutý</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Nastavenia</string>
@@ -32,6 +34,14 @@
     <string name="report_distracted">Rozptýlenie: %1$s</string>
     <string name="report_total">%1$s celkom</string>
     <string name="report_timeline">Priebeh sedenia</string>
+
+    <!-- Blocked apps -->
+    <string name="settings_blocked_apps">Blokované aplikácie</string>
+    <string name="settings_blocked_apps_desc">Tieto aplikácie budú zablokované pri zapnutom prísnom režime.</string>
+    <string name="settings_blocked_apps_empty">Zoznam aplikácií nie je na tejto platforme dostupný.</string>
+    <string name="settings_blocked_apps_search">Hľadať aplikácie...</string>
+    <string name="settings_blocked_apps_count">%1$d z %2$d aplikácií blokovaných</string>
+    <string name="settings_blocked_apps_in_category">%1$d blokovaných</string>
 
     <!-- Blocking overlay -->
     <string name="blocking_title">Sústreď sa!</string>

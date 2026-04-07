@@ -10,6 +10,8 @@
     <string name="timer_pause">Paŭzi</string>
     <string name="timer_resume">Daŭrigi</string>
     <string name="timer_tap_hint">tuŝu por agordi</string>
+    <string name="timer_strict_on">Strikta reĝimo ŝaltita</string>
+    <string name="timer_strict_off">Strikta reĝimo malŝaltita</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Agordoj</string>
@@ -32,6 +34,14 @@
     <string name="report_distracted">Distrita: %1$s</string>
     <string name="report_total">%1$s tuta seanco</string>
     <string name="report_timeline">Seanca templinio</string>
+
+    <!-- Blocked apps -->
+    <string name="settings_blocked_apps">Blokitaj apoj</string>
+    <string name="settings_blocked_apps_desc">Ĉi tiuj apoj estos blokitaj kiam strikta reĝimo estas ŝaltita.</string>
+    <string name="settings_blocked_apps_empty">Aplista listo ne disponebla sur ĉi tiu platformo.</string>
+    <string name="settings_blocked_apps_search">Serĉi apojn...</string>
+    <string name="settings_blocked_apps_count">%1$d el %2$d apoj blokitaj</string>
+    <string name="settings_blocked_apps_in_category">%1$d blokitaj</string>
 
     <!-- Blocking overlay -->
     <string name="blocking_title">Restu koncentriĝinta!</string>
