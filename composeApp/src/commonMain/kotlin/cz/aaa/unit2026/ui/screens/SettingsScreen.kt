@@ -135,6 +135,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         Text(
             text = stringResource(Res.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
 
         // --- Appearance ---

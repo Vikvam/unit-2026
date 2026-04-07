@@ -37,7 +37,7 @@ fun ReportScreen(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(spacing.md),
     ) {
         item {
-            Text(stringResource(Res.string.report_title), style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(Res.string.report_title), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         }
 
         if (sessions.isEmpty()) {
