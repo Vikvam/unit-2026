@@ -13,10 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+private fun formatDurationMinutes(minutes: Int): String =
+    "${minutes.toString().padStart(2, '0')}:00"
+
 data class TimerUiState(
     val timerState: TimerState = TimerState.Idle,
     val progress: Float = 0f,
-    val label: String = "25:00",
+    val label: String = formatDurationMinutes(SessionSettings.durationMinutes.value),
     val isConnected: Boolean = false,
 )
 
@@ -42,7 +45,10 @@ class TimerStateHolder(
                 }
                 _uiState.update { current ->
                     if (session == null) {
-                        TimerUiState(isConnected = current.isConnected)
+                        TimerUiState(
+                            label = formatDurationMinutes(SessionSettings.durationMinutes.value),
+                            isConnected = current.isConnected,
+                        )
                     } else {
                         computeState(session, currentTimeMs()).copy(isConnected = current.isConnected)
                     }
@@ -62,7 +68,7 @@ class TimerStateHolder(
             while (true) {
                 delay(500L)
                 val session = client.sessionState.value ?: continue
-                if (session.pausedAtMs != null) continue
+                if (session.pausedAtMs != null || session.stoppedAtMs != null) continue
                 _uiState.update { current ->
                     computeState(session, currentTimeMs()).copy(isConnected = current.isConnected)
                 }
