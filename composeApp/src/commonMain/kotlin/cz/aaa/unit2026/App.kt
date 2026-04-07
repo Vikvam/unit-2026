@@ -21,7 +21,6 @@ import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 import cz.aaa.unit2026.ui.theme.ThemeState
 import cz.aaa.unit2026.ui.timer.TimerStateHolder
-import kotlin.random.Random
 
 /**
  * Composition-local carrying the app-wide [TrackingClient].
@@ -50,7 +49,7 @@ fun App() {
     LocaleState.locale.collectAsState()
 
     LaunchedEffect(client) {
-        client.run(deviceId = "device-${Random.nextInt(10_000)}")
+        client.run(deviceId = "demo-user")
     }
 
     // Bridge: keep FocusSessionState (blocking / distraction tracking) in sync with

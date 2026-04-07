@@ -63,13 +63,13 @@ class KtorTrackingClient(
 
     override suspend fun run(deviceId: String) {
         running = true
-        var backoffMs = 1_000L
+        var backoffMs = 200L
         while (running && coroutineContext.isActive) {
             try {
                 httpClient.webSocket(host = host, port = port, path = "/ws/tracking") {
                     outgoingChannel = this.outgoing
                     _isConnected.value = true
-                    backoffMs = 1_000L   // reset on successful connect
+                    backoffMs = 200L   // reset on successful connect
                     log.info("[WS] Connected to $host:$port")
 
                     sendMessage(ClientMessage.Register(deviceId))
@@ -99,7 +99,7 @@ class KtorTrackingClient(
 
             if (!running) break
             delay(backoffMs)
-            backoffMs = min(backoffMs * 2, 32_000L)
+            backoffMs = min(backoffMs * 2, 5_000L)
         }
         httpClient.close()
     }

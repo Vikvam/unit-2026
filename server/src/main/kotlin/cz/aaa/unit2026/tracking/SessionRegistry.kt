@@ -100,9 +100,9 @@ class SessionRegistry {
     suspend fun broadcast(message: ServerMessage, exclude: DefaultWebSocketServerSession? = null) {
         val text = trackingJson.encodeToString<ServerMessage>(message)
         log.debug("WS >> broadcast ({}): {}", sessions.size, text)
-        val frame = Frame.Text(text)
+        // Create a fresh Frame per recipient — Ktor's ByteReadPacket is consumed on first send.
         sessions.forEach { ws ->
-            if (ws !== exclude) runCatching { ws.send(frame) }
+            if (ws !== exclude) runCatching { ws.send(Frame.Text(text)) }
         }
     }
 
