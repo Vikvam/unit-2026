@@ -46,11 +46,11 @@ val LightFocusColors = FocusColors(
 )
 
 val DarkFocusColors = FocusColors(
-    active = SageGreenDeep,
-    activeContainer = Color(0xFF1A2E22),
-    distracted = SoftCoralDeep,
-    distractedContainer = Color(0xFF3A1916),
-    idle = CalmBlueDeep,
-    idleContainer = Color(0xFF162231),
+    active = SageGreen,
+    activeContainer = Color(0xFF1C3026),
+    distracted = SoftCoral,
+    distractedContainer = Color(0xFF3A1D1A),
+    idle = CalmBlue,
+    idleContainer = Color(0xFF1A2636),
     warning = WarmAmber,
 )
