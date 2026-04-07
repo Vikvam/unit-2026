@@ -37,5 +37,17 @@ class OfflineTrackingClient : TrackingClient {
         _sessionState.value = current.copy(stoppedAtMs = currentTimeMs())
     }
 
+    override suspend fun pauseSession() {
+        val current = _sessionState.value ?: return
+        if (current.pausedAtMs != null) return
+        _sessionState.value = current.copy(pausedAtMs = currentTimeMs())
+    }
+
+    override suspend fun resumeSession() {
+        val current = _sessionState.value ?: return
+        if (current.pausedAtMs == null) return
+        _sessionState.value = current.copy(pausedAtMs = null)
+    }
+
     override fun disconnect() = Unit
 }

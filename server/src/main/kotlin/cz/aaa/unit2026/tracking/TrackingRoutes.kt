@@ -22,8 +22,10 @@ fun Route.trackingRoutes(registry: SessionRegistry) {
             for (frame in incoming) {
                 if (frame !is Frame.Text) continue
 
+                val text = frame.readText()
+                log.debug("WS << [{}]: {}", clientTag, text)
                 val message = try {
-                    trackingJson.decodeFromString<ClientMessage>(frame.readText())
+                    trackingJson.decodeFromString<ClientMessage>(text)
                 } catch (e: SerializationException) {
                     log.warn("Malformed client message from [{}]: {}", clientTag, e.message)
                     continue
@@ -54,6 +56,28 @@ fun Route.trackingRoutes(registry: SessionRegistry) {
                         } else {
                             log.debug("SessionStop ignored [{}] — no active session", clientTag)
                             registry.sendTo(this, ServerMessage.SessionState(null))
+                        }
+                    }
+
+                    is ClientMessage.SessionPause -> {
+                        val paused = registry.pauseSession()
+                        if (paused != null) {
+                            log.info("Session paused [{}] sessionId={}", clientTag, paused.sessionId)
+                            registry.broadcast(ServerMessage.SessionPaused(paused))
+                        } else {
+                            log.debug("SessionPause ignored [{}] — no active session or already paused", clientTag)
+                            registry.sendTo(this, ServerMessage.SessionState(registry.currentSession()))
+                        }
+                    }
+
+                    is ClientMessage.SessionResume -> {
+                        val resumed = registry.resumeSession()
+                        if (resumed != null) {
+                            log.info("Session resumed [{}] sessionId={}", clientTag, resumed.sessionId)
+                            registry.broadcast(ServerMessage.SessionResumed(resumed))
+                        } else {
+                            log.debug("SessionResume ignored [{}] — no paused session", clientTag)
+                            registry.sendTo(this, ServerMessage.SessionState(registry.currentSession()))
                         }
                     }
                 }

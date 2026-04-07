@@ -127,6 +127,20 @@ class KtorTrackingClient(
         sendMessage(ClientMessage.SessionStop)
     }
 
+    override suspend fun pauseSession() {
+        val current = _sessionState.value ?: return
+        if (current.pausedAtMs != null) return
+        _sessionState.value = current.copy(pausedAtMs = currentTimeMs())
+        sendMessage(ClientMessage.SessionPause)
+    }
+
+    override suspend fun resumeSession() {
+        val current = _sessionState.value ?: return
+        if (current.pausedAtMs == null) return
+        _sessionState.value = current.copy(pausedAtMs = null)
+        sendMessage(ClientMessage.SessionResume)
+    }
+
     override fun disconnect() {
         running = false
         httpClient.close()
@@ -139,10 +153,12 @@ class KtorTrackingClient(
             return   // ignore unrecognised messages — forward-compat
         }
         when (message) {
-            is ServerMessage.SessionStarted -> _sessionState.value = message.session
+            is ServerMessage.SessionStarted  -> _sessionState.value = message.session
             // Preserve the stopped session so the Report screen can display it.
-            is ServerMessage.SessionStopped -> _sessionState.value = message.session
-            is ServerMessage.SessionState   -> applyServerState(message.session)
+            is ServerMessage.SessionStopped  -> _sessionState.value = message.session
+            is ServerMessage.SessionPaused   -> _sessionState.value = message.session
+            is ServerMessage.SessionResumed  -> _sessionState.value = message.session
+            is ServerMessage.SessionState    -> applyServerState(message.session)
         }
     }
 
