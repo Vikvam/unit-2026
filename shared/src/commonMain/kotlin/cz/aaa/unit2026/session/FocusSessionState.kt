@@ -1,5 +1,7 @@
 package cz.aaa.unit2026.session
 
+import cz.aaa.unit2026.AppStorage
+import cz.aaa.unit2026.NoOpAppStorage
 import cz.aaa.unit2026.blocking.BlockRule
 import cz.aaa.unit2026.blocking.BlockingEnforcer
 import cz.aaa.unit2026.monitoring.AppCategory
@@ -8,6 +10,7 @@ import cz.aaa.unit2026.blocking.DEFAULT_BLOCK_RULES
 import cz.aaa.unit2026.blocking.InstalledApp
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.ForegroundAppMonitor
+import cz.aaa.unit2026.tracking.TrackingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,6 +20,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 
 /**
  * Central state holder connecting the UI to the monitoring and blocking layers.
@@ -29,6 +36,17 @@ object FocusSessionState {
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var enforcer: BlockingEnforcer? = null
     private var timerJob: Job? = null
+    private var storage: AppStorage = NoOpAppStorage
+
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+
+    // Storage keys
+    private const val KEY_BLACKLIST = "blacklist"
+    private const val KEY_BLOCK_RULES = "block_rules"
+    private const val KEY_STRICT_MODE = "strict_mode"
+    private const val KEY_SESSION_HISTORY = "session_history"
+    private const val KEY_APP_USAGE = "app_usage"
+    private const val KEY_SEEN_APPS = "seen_apps" // persisted as Map<appId, appName>
 
     // --- Session history ---
     private val _sessionHistory = MutableStateFlow<List<FocusSessionRecord>>(emptyList())
@@ -83,8 +101,10 @@ object FocusSessionState {
 
     // --- Platform setup ---
 
-    fun init(monitor: ForegroundAppMonitor, enforcer: BlockingEnforcer) {
+    fun init(monitor: ForegroundAppMonitor, enforcer: BlockingEnforcer, storage: AppStorage = NoOpAppStorage) {
         this.enforcer = enforcer
+        this.storage = storage
+        loadAll()
         monitor.start()
         scope.launch {
             monitor.activeApp.collect { app ->
@@ -108,7 +128,11 @@ object FocusSessionState {
                 lastTrackedStartMs = System.currentTimeMillis()
 
                 if (app.appId !in SELF_APP_IDS) {
+                    val prevSize = _seenApps.value.size
                     _seenApps.value = _seenApps.value + (app.appId to app)
+                    if (_seenApps.value.size > prevSize) {
+                        persistSeenApps()
+                    }
                 }
                 if (_isRunning.value && !_isPaused.value && _isStrictMode.value && app.appId !in SELF_APP_IDS) {
                     if (shouldBlock(app)) {
@@ -150,6 +174,7 @@ object FocusSessionState {
             .toSet()
         if (autoBlock.isNotEmpty()) {
             _blacklist.value = _blacklist.value + autoBlock
+            persistBlacklist()
         }
     }
 
@@ -196,6 +221,77 @@ object FocusSessionState {
         timerJob = null
         enforcer?.unblock()
         _blockedApp.value = null
+        persistAppUsage()
+    }
+
+    /**
+     * Called from the App-level bridge whenever [TrackingClient.sessionState] changes.
+     *
+     * Keeps [_isRunning] / [_isPaused] in sync with the network session so blocking
+     * and distraction tracking work correctly. Also saves [FocusSessionRecord] entries
+     * to [sessionHistory] when a session ends, and drives [_remainingSeconds] for
+     * the blocking overlay display.
+     */
+    fun syncFromClient(session: TrackingSession?) {
+        val now = System.currentTimeMillis()
+        val isActive = session != null
+            && session.stoppedAtMs == null
+            && session.targetEndAtMs > now
+
+        if (!isActive) {
+            if (_isRunning.value && sessionStartMs > 0L) {
+                // completed = ended naturally (no stoppedAtMs); false = manually stopped
+                saveSession(completed = session != null && session.stoppedAtMs == null)
+            }
+            _isRunning.value = false
+            _isPaused.value = false
+            sessionStartMs = 0L
+            _remainingSeconds.value = 0L
+            timerJob?.cancel()
+            timerJob = null
+            enforcer?.unblock()
+            _blockedApp.value = null
+            return
+        }
+
+        checkNotNull(session)
+
+        if (sessionStartMs != session.startedAtMs) {
+            // New session adopted — save any in-progress session first
+            if (_isRunning.value && sessionStartMs > 0L) {
+                saveSession(completed = false)
+            }
+            sessionStartMs = session.startedAtMs
+            plannedSeconds = (session.targetEndAtMs - session.startedAtMs) / 1000
+            currentDistractions.clear()
+        }
+
+        val nowPaused = session.pausedAtMs != null
+        _isRunning.value = true
+        _isPaused.value = nowPaused
+
+        if (nowPaused) {
+            // Freeze displayed remaining time at the moment of pause
+            _remainingSeconds.value = ((session.targetEndAtMs - session.pausedAtMs!!) / 1000)
+                .coerceAtLeast(0L)
+            timerJob?.cancel()
+            timerJob = null
+            enforcer?.unblock()
+            _blockedApp.value = null
+        } else {
+            // (Re-)start countdown display derived from targetEndAtMs.
+            // Always cancel first so resume after pause picks up the correct time.
+            val targetEndAtMs = session.targetEndAtMs
+            timerJob?.cancel()
+            timerJob = scope.launch {
+                while (true) {
+                    val remaining = (targetEndAtMs - System.currentTimeMillis()) / 1000
+                    _remainingSeconds.value = remaining.coerceAtLeast(0L)
+                    if (remaining <= 0L) break
+                    delay(1000L)
+                }
+            }
+        }
     }
 
     private fun saveSession(completed: Boolean) {
@@ -209,6 +305,8 @@ object FocusSessionState {
         )
         _sessionHistory.value = _sessionHistory.value + record
         currentDistractions.clear()
+        persistSessionHistory()
+        persistAppUsage()
     }
 
     private fun startTimer() {
@@ -232,36 +330,44 @@ object FocusSessionState {
             enforcer?.unblock()
             _blockedApp.value = null
         }
+        persistStrictMode()
     }
 
     fun addToBlacklist(appId: String) {
         _blacklist.value = _blacklist.value + appId
+        persistBlacklist()
     }
 
     fun removeFromBlacklist(appId: String) {
         _blacklist.value = _blacklist.value - appId
+        persistBlacklist()
     }
 
     fun addAllToBlacklist(appIds: Set<String>) {
         _blacklist.value = _blacklist.value + appIds
+        persistBlacklist()
     }
 
     fun removeAllFromBlacklist(appIds: Set<String>) {
         _blacklist.value = _blacklist.value - appIds
+        persistBlacklist()
     }
 
     fun addBlockRule(rule: BlockRule) {
         _blockRules.value = _blockRules.value + rule
+        persistBlockRules()
     }
 
     fun removeBlockRule(rule: BlockRule) {
         _blockRules.value = _blockRules.value - rule
+        persistBlockRules()
     }
 
     fun toggleBlockRule(rule: BlockRule) {
         _blockRules.value = _blockRules.value.map {
             if (it == rule) it.copy(enabled = !it.enabled) else it
         }
+        persistBlockRules()
     }
 
     private fun shouldBlock(app: ActiveApp): Boolean {
@@ -273,6 +379,87 @@ object FocusSessionState {
                 runCatching { Regex(rule.pattern, RegexOption.IGNORE_CASE).containsMatchIn(target) }
                     .getOrDefault(false)
             }
+    }
+
+    // --- Persistence ---
+
+    private fun loadAll() {
+        runCatching {
+            storage.load(KEY_BLACKLIST)?.let { raw ->
+                val list = json.decodeFromString(ListSerializer(String.serializer()), raw)
+                _blacklist.value = list.toSet()
+            }
+        }
+        runCatching {
+            storage.load(KEY_BLOCK_RULES)?.let { raw ->
+                _blockRules.value = json.decodeFromString(ListSerializer(BlockRule.serializer()), raw)
+            }
+        }
+        runCatching {
+            storage.load(KEY_STRICT_MODE)?.let { raw ->
+                _isStrictMode.value = raw.toBoolean()
+            }
+        }
+        runCatching {
+            storage.load(KEY_SESSION_HISTORY)?.let { raw ->
+                _sessionHistory.value = json.decodeFromString(ListSerializer(FocusSessionRecord.serializer()), raw)
+            }
+        }
+        runCatching {
+            storage.load(KEY_APP_USAGE)?.let { raw ->
+                _appUsage.value = json.decodeFromString(MapSerializer(String.serializer(), AppUsageStat.serializer()), raw)
+            }
+        }
+        runCatching {
+            storage.load(KEY_SEEN_APPS)?.let { raw ->
+                val nameMap = json.decodeFromString(MapSerializer(String.serializer(), String.serializer()), raw)
+                _seenApps.value = nameMap.mapValues { (id, name) ->
+                    ActiveApp(appId = id, appName = name, windowTitle = null, capturedAtMs = 0L)
+                }
+            }
+        }
+    }
+
+    private fun persistBlacklist() {
+        val snapshot = _blacklist.value.toList()
+        scope.launch {
+            runCatching { storage.save(KEY_BLACKLIST, json.encodeToString(ListSerializer(String.serializer()), snapshot)) }
+        }
+    }
+
+    private fun persistBlockRules() {
+        val snapshot = _blockRules.value
+        scope.launch {
+            runCatching { storage.save(KEY_BLOCK_RULES, json.encodeToString(ListSerializer(BlockRule.serializer()), snapshot)) }
+        }
+    }
+
+    private fun persistStrictMode() {
+        val value = _isStrictMode.value.toString()
+        scope.launch {
+            runCatching { storage.save(KEY_STRICT_MODE, value) }
+        }
+    }
+
+    private fun persistSessionHistory() {
+        val snapshot = _sessionHistory.value
+        scope.launch {
+            runCatching { storage.save(KEY_SESSION_HISTORY, json.encodeToString(ListSerializer(FocusSessionRecord.serializer()), snapshot)) }
+        }
+    }
+
+    private fun persistAppUsage() {
+        val snapshot = _appUsage.value
+        scope.launch {
+            runCatching { storage.save(KEY_APP_USAGE, json.encodeToString(MapSerializer(String.serializer(), AppUsageStat.serializer()), snapshot)) }
+        }
+    }
+
+    private fun persistSeenApps() {
+        val nameMap = _seenApps.value.mapValues { it.value.appName }
+        scope.launch {
+            runCatching { storage.save(KEY_SEEN_APPS, json.encodeToString(MapSerializer(String.serializer(), String.serializer()), nameMap)) }
+        }
     }
 
     private val SELF_APP_IDS = setOf(

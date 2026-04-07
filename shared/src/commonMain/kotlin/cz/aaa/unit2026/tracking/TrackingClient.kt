@@ -37,6 +37,20 @@ interface TrackingClient {
      */
     suspend fun stopSession()
 
+    /**
+     * Pauses the active session. Updates [sessionState] immediately (works offline).
+     * No-op if there is no active session or the session is already paused.
+     * If connected, broadcasts the pause to other clients.
+     */
+    suspend fun pauseSession()
+
+    /**
+     * Resumes a paused session. Updates [sessionState] immediately (works offline).
+     * No-op if there is no active session or the session is not paused.
+     * If connected, broadcasts the resume to other clients.
+     */
+    suspend fun resumeSession()
+
     /** Terminates the connection loop and closes any open WebSocket. */
     fun disconnect()
 }

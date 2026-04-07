@@ -1,5 +1,8 @@
 package cz.aaa.unit2026.session
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class FocusSessionRecord(
     val id: Long,                               // startTime as ID
     val startTimeMs: Long,
@@ -15,6 +18,7 @@ data class FocusSessionRecord(
     val focusScore: Int get() = (100 - distractions.size * 10).coerceAtLeast(0)
 }
 
+@Serializable
 data class DistractionAttempt(
     val timestampMs: Long,
     val appId: String,

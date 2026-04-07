@@ -329,6 +329,56 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             }
         }
 
+        // --- Blocked apps (Desktop — flat list from seen/recent apps) ---
+        if (getPlatform().isDesktop) SettingsCard {
+            SectionLabel("Blocked apps")
+            Text(
+                "Apps seen while the monitor is running. Toggle to block them during focus sessions.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(spacing.sm))
+
+            if (seenApps.isNotEmpty()) {
+                seenApps.values.sortedBy { it.appId }.forEach { app ->
+                    val isBlocked = app.appId in blacklist
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isBlocked) FocusSessionState.removeFromBlacklist(app.appId)
+                                else FocusSessionState.addToBlacklist(app.appId)
+                            },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(app.appName, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                app.appId,
+                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Checkbox(
+                            checked = isBlocked,
+                            onCheckedChange = { checked ->
+                                if (checked) FocusSessionState.addToBlacklist(app.appId)
+                                else FocusSessionState.removeFromBlacklist(app.appId)
+                            },
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    "No apps detected yet. Start a session to populate this list.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         // --- Blocked apps (Android only — categorized list with icons) ---
         if (getPlatform().isAndroid) SettingsCard {
             SectionLabel(stringResource(Res.string.settings_blocked_apps))

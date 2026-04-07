@@ -17,6 +17,8 @@ data class TrackingSession(
     val startedAtMs: Long,
     val targetEndAtMs: Long,
     val stoppedAtMs: Long? = null,
+    /** Set to the epoch-ms timestamp when the session was paused; null when running or stopped. */
+    val pausedAtMs: Long? = null,
     // Future extension: add nullable fields with defaults here
     val label: String? = null,
 )

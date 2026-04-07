@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import cz.aaa.unit2026.LocalTimerStateHolder
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.components.TimerRing
 import cz.aaa.unit2026.ui.components.TimerState
@@ -69,30 +70,15 @@ import unit2026.composeapp.generated.resources.timer_tap_hint
 @Composable
 fun TimerScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
+    val stateHolder = LocalTimerStateHolder.current
+    val uiState by stateHolder.uiState.collectAsState()
     val durationMinutes by SessionSettings.durationMinutes.collectAsState()
-    val isRunning by FocusSessionState.isRunning.collectAsState()
-    val isPaused by FocusSessionState.isPaused.collectAsState()
-    val remainingSeconds by FocusSessionState.remainingSeconds.collectAsState()
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
 
-    val timerState = when {
-        isRunning && isPaused -> TimerState.Paused
-        isRunning -> TimerState.Running
-        else -> TimerState.Idle
-    }
-
-    val totalSeconds = durationMinutes * 60L
-    val progress = if (isRunning && totalSeconds > 0) {
-        1f - (remainingSeconds.toFloat() / totalSeconds)
-    } else {
-        0f
-    }
-
-    val displayMinutes = if (isRunning) remainingSeconds / 60 else durationMinutes.toLong()
-    val displaySeconds = if (isRunning) remainingSeconds % 60 else 0L
-    val label = "%d:%02d".format(displayMinutes, displaySeconds)
-
+    val isRunning = uiState.timerState == TimerState.Running || uiState.timerState == TimerState.Paused
+    val isPaused = uiState.timerState == TimerState.Paused
     val canConfigure = !isRunning || isPaused
+
     var showSessionParams by remember { mutableStateOf(false) }
 
     var pressed by remember { mutableStateOf(false) }
@@ -104,10 +90,10 @@ fun TimerScreen(modifier: Modifier = Modifier) {
 
     // Ambient background gradient color that shifts with state
     val ambientColor by animateColorAsState(
-        targetValue = when (timerState) {
-            TimerState.Running -> OpenJetTracksTheme.focus.active.copy(alpha = 0.08f)
+        targetValue = when (uiState.timerState) {
+            TimerState.Running -> MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
             TimerState.Paused -> OpenJetTracksTheme.focus.warning.copy(alpha = 0.06f)
-            else -> OpenJetTracksTheme.focus.idle.copy(alpha = 0.04f)
+            else -> MaterialTheme.colorScheme.primary.copy(alpha = 0.04f)
         },
         animationSpec = tween(1200),
         label = "ambientColor",
@@ -131,9 +117,9 @@ fun TimerScreen(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center,
         ) {
             TimerRing(
-                progress = progress,
-                state = timerState,
-                label = label,
+                progress = uiState.progress,
+                state = uiState.timerState,
+                label = uiState.label,
                 subtitle = if (canConfigure) stringResource(Res.string.timer_tap_hint) else null,
                 modifier = Modifier
                     .scale(scale)
@@ -158,7 +144,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     text = if (isStrictMode) stringResource(Res.string.timer_strict_on)
                            else stringResource(Res.string.timer_strict_off),
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isStrictMode) OpenJetTracksTheme.focus.active
+                    color = if (isStrictMode) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -178,22 +164,17 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                     if (!running) {
                         Button(
                             onClick = {
-                                FocusSessionState.setDurationMinutes(durationMinutes)
-                                FocusSessionState.startSession()
+                                stateHolder.onStart(durationMinutes * 60L * 1_000L)
                             },
                             shape = RoundedCornerShape(24.dp),
-                            modifier = Modifier.height(52.dp).width(140.dp),
+                            modifier = Modifier.height(48.dp).width(120.dp),
                         ) {
-                            Text(
-                                stringResource(Res.string.timer_start),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
+                            Text(stringResource(Res.string.timer_start))
                         }
                     } else {
                         Button(
                             onClick = {
-                                if (isPaused) FocusSessionState.resumeSession()
-                                else FocusSessionState.pauseSession()
+                                if (isPaused) stateHolder.onResume() else stateHolder.onPause()
                             },
                             shape = RoundedCornerShape(24.dp),
                             colors = if (isPaused) ButtonDefaults.buttonColors()
@@ -201,28 +182,24 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                             ),
-                            modifier = Modifier.height(52.dp).width(130.dp),
+                            modifier = Modifier.height(48.dp).width(120.dp),
                         ) {
                             Text(
                                 if (isPaused) stringResource(Res.string.timer_resume)
                                 else stringResource(Res.string.timer_pause),
-                                style = MaterialTheme.typography.labelLarge,
                             )
                         }
 
                         OutlinedButton(
-                            onClick = { FocusSessionState.stopSession() },
+                            onClick = { stateHolder.onStop() },
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 containerColor = MaterialTheme.colorScheme.surface,
                                 contentColor = MaterialTheme.colorScheme.error,
                             ),
-                            modifier = Modifier.height(52.dp).width(130.dp),
+                            modifier = Modifier.height(48.dp).width(120.dp),
                         ) {
-                            Text(
-                                stringResource(Res.string.timer_stop),
-                                style = MaterialTheme.typography.labelLarge,
-                            )
+                            Text(stringResource(Res.string.timer_stop))
                         }
                     }
                 }
@@ -235,15 +212,14 @@ fun TimerScreen(modifier: Modifier = Modifier) {
             onDismissRequest = { showSessionParams = false },
             sheetState = rememberModalBottomSheetState(),
         ) {
-            SessionParamsSheet(durationMinutes = durationMinutes)
+            SessionParamsSheet(durationMinutes = durationMinutes, isRunning = isRunning)
         }
     }
 }
 
 @Composable
-private fun SessionParamsSheet(durationMinutes: Int) {
+private fun SessionParamsSheet(durationMinutes: Int, isRunning: Boolean) {
     val spacing = OpenJetTracksTheme.spacing
-    val isRunning by FocusSessionState.isRunning.collectAsState()
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
 
     Column(

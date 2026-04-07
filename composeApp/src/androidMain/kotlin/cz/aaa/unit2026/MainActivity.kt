@@ -10,10 +10,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import cz.aaa.unit2026.AndroidAppStorage
 import cz.aaa.unit2026.blocking.AndroidBlockingEnforcer
 import cz.aaa.unit2026.monitoring.AndroidForegroundAppMonitor
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.session.loadInstalledApps
+import cz.aaa.unit2026.ui.theme.LocaleState
+import cz.aaa.unit2026.ui.theme.ThemeState
 
 class MainActivity : ComponentActivity() {
 
@@ -62,9 +65,13 @@ class MainActivity : ComponentActivity() {
     private fun initSessionIfNeeded() {
         if (initialized) return
         initialized = true
+        val storage = AndroidAppStorage(filesDir)
+        ThemeState.init(storage)
+        LocaleState.init(storage)
         FocusSessionState.init(
             monitor = AndroidForegroundAppMonitor(),
             enforcer = AndroidBlockingEnforcer(applicationContext),
+            storage = storage,
         )
         FocusSessionState.setInstalledApps(loadInstalledApps(packageManager))
     }

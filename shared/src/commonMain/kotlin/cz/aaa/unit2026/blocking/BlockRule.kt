@@ -1,5 +1,8 @@
 package cz.aaa.unit2026.blocking
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class BlockRule(
     val label: String,
     val pattern: String,
