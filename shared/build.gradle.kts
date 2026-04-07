@@ -26,16 +26,21 @@ kotlin {
     }
 
     sourceSets {
+        val androidJvmMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.ktor.clientCore)
+                implementation(libs.ktor.clientCio)
+                implementation(libs.ktor.clientWebSockets)
+                implementation(libs.ktor.clientContentNeg)
+                implementation(libs.ktor.serializationJson)
+            }
+        }
+        androidMain.get().dependsOn(androidJvmMain)
+        jvmMain.get().dependsOn(androidJvmMain)
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutinesCore)
             implementation(libs.kotlinx.serialization.json)
-        }
-        jvmMain.dependencies {
-            implementation(libs.ktor.clientCore)
-            implementation(libs.ktor.clientCio)
-            implementation(libs.ktor.clientWebSockets)
-            implementation(libs.ktor.clientContentNeg)
-            implementation(libs.ktor.serializationJson)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
