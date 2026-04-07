@@ -10,6 +10,7 @@ import cz.aaa.unit2026.blocking.DEFAULT_BLOCK_RULES
 import cz.aaa.unit2026.blocking.InstalledApp
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.ForegroundAppMonitor
+import cz.aaa.unit2026.tracking.TrackingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -221,6 +222,76 @@ object FocusSessionState {
         enforcer?.unblock()
         _blockedApp.value = null
         persistAppUsage()
+    }
+
+    /**
+     * Called from the App-level bridge whenever [TrackingClient.sessionState] changes.
+     *
+     * Keeps [_isRunning] / [_isPaused] in sync with the network session so blocking
+     * and distraction tracking work correctly. Also saves [FocusSessionRecord] entries
+     * to [sessionHistory] when a session ends, and drives [_remainingSeconds] for
+     * the blocking overlay display.
+     */
+    fun syncFromClient(session: TrackingSession?) {
+        val now = System.currentTimeMillis()
+        val isActive = session != null
+            && session.stoppedAtMs == null
+            && session.targetEndAtMs > now
+
+        if (!isActive) {
+            if (_isRunning.value && sessionStartMs > 0L) {
+                // completed = ended naturally (no stoppedAtMs); false = manually stopped
+                saveSession(completed = session != null && session.stoppedAtMs == null)
+            }
+            _isRunning.value = false
+            _isPaused.value = false
+            sessionStartMs = 0L
+            _remainingSeconds.value = 0L
+            timerJob?.cancel()
+            timerJob = null
+            enforcer?.unblock()
+            _blockedApp.value = null
+            return
+        }
+
+        checkNotNull(session)
+
+        if (sessionStartMs != session.startedAtMs) {
+            // New session adopted — save any in-progress session first
+            if (_isRunning.value && sessionStartMs > 0L) {
+                saveSession(completed = false)
+            }
+            sessionStartMs = session.startedAtMs
+            plannedSeconds = (session.targetEndAtMs - session.startedAtMs) / 1000
+            currentDistractions.clear()
+        }
+
+        val nowPaused = session.pausedAtMs != null
+        _isRunning.value = true
+        _isPaused.value = nowPaused
+
+        if (nowPaused) {
+            // Freeze displayed remaining time at the moment of pause
+            _remainingSeconds.value = ((session.targetEndAtMs - session.pausedAtMs!!) / 1000)
+                .coerceAtLeast(0L)
+            timerJob?.cancel()
+            timerJob = null
+            enforcer?.unblock()
+            _blockedApp.value = null
+        } else {
+            // (Re-)start countdown display derived from targetEndAtMs.
+            // Always cancel first so resume after pause picks up the correct time.
+            val targetEndAtMs = session.targetEndAtMs
+            timerJob?.cancel()
+            timerJob = scope.launch {
+                while (true) {
+                    val remaining = (targetEndAtMs - System.currentTimeMillis()) / 1000
+                    _remainingSeconds.value = remaining.coerceAtLeast(0L)
+                    if (remaining <= 0L) break
+                    delay(1000L)
+                }
+            }
+        }
     }
 
     private fun saveSession(completed: Boolean) {

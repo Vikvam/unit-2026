@@ -23,11 +23,6 @@ class TimerStateHolder(
     private val client: TrackingClient,
     private val scope: CoroutineScope,
 ) {
-    companion object {
-        /** Default session length: 25 minutes. */
-        private const val DEFAULT_DURATION_MS = 25L * 60 * 1_000
-    }
-
     private val _uiState = MutableStateFlow(TimerUiState())
     val uiState: StateFlow<TimerUiState> = _uiState.asStateFlow()
 
@@ -51,26 +46,24 @@ class TimerStateHolder(
         }
 
         // Tick every 500 ms to keep the displayed label smooth.
+        // Skipped when the session is paused — time is frozen at pausedAtMs.
         scope.launch {
             while (true) {
                 delay(500L)
-                val session = client.sessionState.value
-                if (session != null) {
-                    _uiState.update { current ->
-                        computeState(session, currentTimeMs()).copy(isConnected = current.isConnected)
-                    }
+                val session = client.sessionState.value ?: continue
+                if (session.pausedAtMs != null) continue
+                _uiState.update { current ->
+                    computeState(session, currentTimeMs()).copy(isConnected = current.isConnected)
                 }
             }
         }
     }
 
-    fun onStart() {
+    /** Start a new session with the given duration. No-op if a session is already active. */
+    fun onStart(durationMs: Long) {
         scope.launch {
             val now = currentTimeMs()
-            client.startSession(
-                startedAtMs = now,
-                targetEndAtMs = now + DEFAULT_DURATION_MS,
-            )
+            client.startSession(startedAtMs = now, targetEndAtMs = now + durationMs)
         }
     }
 
@@ -78,26 +71,31 @@ class TimerStateHolder(
         scope.launch { client.stopSession() }
     }
 
+    fun onPause() {
+        scope.launch { client.pauseSession() }
+    }
+
+    fun onResume() {
+        scope.launch { client.resumeSession() }
+    }
+
     private fun computeState(session: TrackingSession, now: Long): TimerUiState {
         if (session.stoppedAtMs != null) {
-            return TimerUiState(
-                timerState = TimerState.Finished,
-                progress = 1f,
-                label = "Done",
-            )
+            return TimerUiState(timerState = TimerState.Finished, progress = 1f, label = "Done")
         }
-        val remainingMs = session.targetEndAtMs - now
+
+        // When paused, freeze the displayed remaining time at the moment pause was pressed.
+        val effectiveNow = session.pausedAtMs ?: now
+        val remainingMs = (session.targetEndAtMs - effectiveNow).coerceAtLeast(0L)
+
         if (remainingMs <= 0L) {
-            return TimerUiState(
-                timerState = TimerState.Finished,
-                progress = 1f,
-                label = "00:00",
-            )
+            return TimerUiState(timerState = TimerState.Finished, progress = 1f, label = "00:00")
         }
-        val totalMs = session.targetEndAtMs - session.startedAtMs
+
+        val totalMs = (session.targetEndAtMs - session.startedAtMs).coerceAtLeast(1L)
         val progress = ((totalMs - remainingMs).toFloat() / totalMs).coerceIn(0f, 1f)
         return TimerUiState(
-            timerState = TimerState.Running,
+            timerState = if (session.pausedAtMs != null) TimerState.Paused else TimerState.Running,
             progress = progress,
             label = formatMs(remainingMs),
         )
