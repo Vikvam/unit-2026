@@ -216,8 +216,8 @@ fun TimerRing(
 
 @Composable
 private fun ringColorFor(state: TimerState): Color = when (state) {
-    TimerState.Running  -> OpenJetTracksTheme.focus.active
+    TimerState.Running  -> MaterialTheme.colorScheme.primary
     TimerState.Paused   -> OpenJetTracksTheme.focus.warning
-    TimerState.Finished -> OpenJetTracksTheme.focus.active
-    TimerState.Idle     -> OpenJetTracksTheme.focus.idle
+    TimerState.Finished -> MaterialTheme.colorScheme.primary
+    TimerState.Idle     -> MaterialTheme.colorScheme.primary
 }

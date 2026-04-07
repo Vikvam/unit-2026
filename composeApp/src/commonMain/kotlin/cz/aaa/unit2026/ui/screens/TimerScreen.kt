@@ -214,6 +214,7 @@ fun TimerScreen(modifier: Modifier = Modifier) {
                             onClick = { FocusSessionState.stopSession() },
                             shape = RoundedCornerShape(24.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surface,
                                 contentColor = MaterialTheme.colorScheme.error,
                             ),
                             modifier = Modifier.height(52.dp).width(130.dp),
