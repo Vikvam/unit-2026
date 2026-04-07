@@ -1,5 +1,7 @@
 package cz.aaa.unit2026.tracking
 
+import cz.aaa.unit2026.util.currentTimeMs
+import cz.aaa.unit2026.util.generateSessionId
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
@@ -9,29 +11,32 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.SerializationException
 import kotlin.coroutines.coroutineContext
 import kotlin.math.min
 
 /**
- * JVM (Android + Desktop) implementation of [TrackingClient].
+ * JVM (Desktop) implementation of [TrackingClient].
  *
  * - Works offline: [startSession] and [stopSession] update [sessionState] immediately
  *   regardless of connectivity.
  * - Auto-reconnects with exponential backoff (1s → 2s → 4s → … → 32s max).
  * - On reconnect, reconciles with server: server state wins on conflict; local offline
  *   sessions are pushed to the server if no server session is active.
+ * - Stopped sessions are preserved in [sessionState] (with [TrackingSession.stoppedAtMs] set)
+ *   so the Report screen can display them until a new session begins.
  *
  * Usage:
  * ```kotlin
- * val client = KtorTrackingClient(host = "192.168.1.x", port = 8080)
- * // in viewModelScope or lifecycleScope:
+ * val client = KtorTrackingClient(host = "localhost", port = 8080)
+ * // in a coroutine scope:
  * launch { client.run("my-device-id") }
  * // UI:
  * client.sessionState.collect { session -> … }
  * // User action:
- * client.startSession(startedAtMs = now, targetEndAtMs = now + 40.minutes.inWholeMilliseconds)
+ * client.startSession(startedAtMs = now, targetEndAtMs = now + 25.minutes.inWholeMilliseconds)
  * ```
  */
 class KtorTrackingClient(
@@ -46,7 +51,6 @@ class KtorTrackingClient(
     override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
     // Kept as a class field so startSession/stopSession can send while connected.
-    // Named distinctly to avoid shadowing DefaultClientWebSocketSession.outgoing inside lambdas.
     private var outgoingChannel: SendChannel<Frame>? = null
     private var running = false
 
@@ -92,14 +96,15 @@ class KtorTrackingClient(
     }
 
     override suspend fun startSession(startedAtMs: Long, targetEndAtMs: Long) {
-        // Clear any expired local session before starting a new one
-        val now = System.currentTimeMillis()
-        if (_sessionState.value?.targetEndAtMs?.let { it <= now } == true) {
+        // Clear any expired or finished local session before starting a new one
+        val now = currentTimeMs()
+        val current = _sessionState.value
+        if (current != null && (current.stoppedAtMs != null || current.targetEndAtMs <= now)) {
             _sessionState.value = null
         }
 
         val session = TrackingSession(
-            sessionId = java.util.UUID.randomUUID().toString(),
+            sessionId = generateSessionId(),
             startedAtMs = startedAtMs,
             targetEndAtMs = targetEndAtMs,
         )
@@ -109,7 +114,7 @@ class KtorTrackingClient(
 
     override suspend fun stopSession() {
         val current = _sessionState.value ?: return
-        _sessionState.value = current.copy(stoppedAtMs = System.currentTimeMillis())
+        _sessionState.value = current.copy(stoppedAtMs = currentTimeMs())
         sendMessage(ClientMessage.SessionStop)
     }
 
@@ -126,7 +131,8 @@ class KtorTrackingClient(
         }
         when (message) {
             is ServerMessage.SessionStarted -> _sessionState.value = message.session
-            is ServerMessage.SessionStopped -> _sessionState.value = null
+            // Preserve the stopped session so the Report screen can display it.
+            is ServerMessage.SessionStopped -> _sessionState.value = message.session
             is ServerMessage.SessionState   -> applyServerState(message.session)
         }
     }
@@ -134,7 +140,8 @@ class KtorTrackingClient(
     /**
      * Reconciles server state received on connect.
      * Server wins if it has an active non-expired session.
-     * If server has nothing and we have a local active session, push it to the server.
+     * If server has nothing and we have an active local session, push it to the server.
+     * Finished/stopped local sessions are left untouched so the Report screen can show them.
      */
     private suspend fun reconcile(text: String) {
         val message = try {
@@ -145,25 +152,27 @@ class KtorTrackingClient(
         if (message !is ServerMessage.SessionState) return
 
         val serverSession = message.session
-        val now = System.currentTimeMillis()
+        val now = currentTimeMs()
 
         if (serverSession != null && serverSession.targetEndAtMs > now) {
             // Server has a live session — adopt it
             _sessionState.value = serverSession
         } else {
-            // Server has no active session — push local offline session if we have one
+            // Server has no active session — push active local session if we have one
             val local = _sessionState.value
             if (local != null && local.stoppedAtMs == null && local.targetEndAtMs > now) {
                 sendMessage(ClientMessage.SessionStart(local.startedAtMs, local.targetEndAtMs))
-            } else {
-                _sessionState.value = null
             }
+            // Do not null out finished/stopped local sessions — Report screen needs them.
         }
     }
 
     private fun applyServerState(session: TrackingSession?) {
-        val now = System.currentTimeMillis()
-        _sessionState.value = if (session != null && session.targetEndAtMs > now) session else null
+        val now = currentTimeMs()
+        if (session != null && session.targetEndAtMs > now) {
+            _sessionState.value = session
+        }
+        // Don't null out local state from a SessionState broadcast — only adopt active sessions.
     }
 
     private suspend fun sendMessage(message: ClientMessage) {

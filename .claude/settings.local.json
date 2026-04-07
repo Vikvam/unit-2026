@@ -6,5 +6,9 @@
       "Bash(./gradlew :server:test --info)",
       "Bash(./gradlew :server:test --rerun)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "gitlab"
+  ],
+  "enableAllProjectMcpServers": true
 }

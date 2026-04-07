@@ -1,0 +1,33 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_timer">Timer</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_report">Report</string>
+
+    <!-- Timer screen -->
+    <string name="timer_start">Start</string>
+    <string name="timer_stop">Stop</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_strict_mode">Strict mode</string>
+    <string name="settings_strict_mode_desc">Block all non-whitelisted apps during sessions</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_desc">Choose light, dark, or follow your system setting</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_desc">Choose the app language</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- Report screen -->
+    <string name="report_title">Session Report</string>
+    <string name="report_focused">Focused: %1$s</string>
+    <string name="report_distracted">Distracted: %1$s</string>
+    <string name="report_total">%1$s total session</string>
+    <string name="report_timeline">Session timeline</string>
+
+    <!-- Blocking overlay -->
+    <string name="blocking_title">Stay focused!</string>
+    <string name="blocking_message">%1$s is blocked during your session.</string>
+</resources>
