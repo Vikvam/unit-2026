@@ -6,6 +6,7 @@ import java.io.File
 
 private const val PLUGIN_NAME = "openjetracks_monitor"
 private const val LOG_PREFIX = "ACTIVE_WINDOW:"
+private const val SEP = "|&|"
 
 /**
  * Monitors the foreground app on KDE Plasma 6 / Wayland via KWin scripting.
@@ -68,19 +69,19 @@ class KdeWaylandAppMonitor(
             .trim()
             .takeIf { it.isNotEmpty() } ?: return null
 
-        val parts = payload.split("|")
+        val parts = payload.split(SEP)
         if (parts.size < 2) return null
 
-        val caption = parts[0]
+        val caption       = parts[0]
         val resourceClass = parts[1]
-        val pid = parts.getOrNull(2)?.toIntOrNull()
+        val pid           = parts.getOrNull(2)?.toIntOrNull()
         val geometry = runCatching {
             WindowGeometry(
-                x = parts[3].toInt(),
-                y = parts[4].toInt(),
-                width = parts[5].toInt(),
-                height = parts[6].toInt(),
-                scale = parts.getOrNull(7)?.toFloat() ?: 1f,
+                x      = parts[3].toDouble().toInt(),
+                y      = parts[4].toDouble().toInt(),
+                width  = parts[5].toDouble().toInt(),
+                height = parts[6].toDouble().toInt(),
+                scale  = parts.getOrNull(7)?.toFloat() ?: 1f,
             )
         }.getOrNull()
 
@@ -126,19 +127,19 @@ function emit(w) {
     var g = w.frameGeometry;
     var scale = 1;
     try { scale = w.output.devicePixelRatio; } catch(e) {}
-    print("$LOG_PREFIX" + w.caption + "|" + w.resourceClass + "|" + w.pid + "|" + g.x + "|" + g.y + "|" + g.width + "|" + g.height + "|" + scale);
+    var S = "|&|";
+    print("$LOG_PREFIX" + w.caption + S + w.resourceClass + S + w.pid + S + g.x + S + g.y + S + g.width + S + g.height + S + scale);
 }
 
 function trackWindow(w) {
+    if (!w || w.caption === "" || w.caption === "OpenJetTracks-Overlay") return;
     if (trackedWindow) {
         try { trackedWindow.captionChanged.disconnect(onCaptionChanged); } catch(e) {}
         try { trackedWindow.frameGeometryChanged.disconnect(onGeometryChanged); } catch(e) {}
     }
     trackedWindow = w;
-    if (w) {
-        w.captionChanged.connect(onCaptionChanged);
-        w.frameGeometryChanged.connect(onGeometryChanged);
-    }
+    w.captionChanged.connect(onCaptionChanged);
+    w.frameGeometryChanged.connect(onGeometryChanged);
 }
 
 function onCaptionChanged() {
@@ -152,12 +153,13 @@ function onGeometryChanged() {
 }
 
 workspace.windowActivated.connect(function(w) {
-    if (w) emit(w);
+    if (!w || w.windowType !== 0) return;  // skip dialogs, popups, utilities
+    emit(w);
     trackWindow(w);
 });
 
 var w = workspace.activeWindow;
-if (w) {
+if (w && w.windowType === 0) {
     emit(w);
     trackWindow(w);
 }

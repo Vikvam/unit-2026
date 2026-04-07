@@ -40,7 +40,7 @@ fun main() {
             val geo = blocked!!.geometry
             Window(
                 onCloseRequest = {},
-                title = "",
+                title = "OpenJetTracks-Overlay",
                 state = if (geo != null) WindowState(
                     position = WindowPosition((geo.x * geo.scale).dp, (geo.y * geo.scale).dp),
                     size = DpSize((geo.width * geo.scale).dp, (geo.height * geo.scale).dp),

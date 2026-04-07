@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,6 +25,9 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -69,7 +73,11 @@ fun SettingsScreen(
     val currentLocale by LocaleState.locale.collectAsState()
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
     val blacklist by FocusSessionState.blacklist.collectAsState()
+    val blockRules by FocusSessionState.blockRules.collectAsState()
+    val seenApps by FocusSessionState.seenApps.collectAsState()
     val installedApps by FocusSessionState.installedApps.collectAsState()
+    var newRuleLabel by remember { mutableStateOf("") }
+    var newRulePattern by remember { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -167,40 +175,128 @@ fun SettingsScreen(
         HorizontalDivider()
         Spacer(Modifier.height(spacing.lg))
 
-        // Blocked apps
-        Text("Blocked apps", style = MaterialTheme.typography.bodyLarge)
+        // Block rules (regex — desktop browser titles)
+        Text("Block rules", style = MaterialTheme.typography.bodyLarge)
         Text(
-            "These apps will be blocked when strict mode is on.",
+            "Matched against app name + window title. Useful for blocking sites inside a browser.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(spacing.sm))
 
-        if (installedApps.isEmpty()) {
+        blockRules.forEach { rule ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(rule.label, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        rule.pattern,
+                        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = rule.enabled,
+                        onCheckedChange = { FocusSessionState.toggleBlockRule(rule) },
+                    )
+                    TextButton(onClick = { FocusSessionState.removeBlockRule(rule) }) {
+                        Text("✕", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(spacing.sm))
+
+        // Add custom rule
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = newRuleLabel,
+                onValueChange = { newRuleLabel = it },
+                label = { Text("Label") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = newRulePattern,
+                onValueChange = { newRulePattern = it },
+                label = { Text("Regex") },
+                modifier = Modifier.weight(2f),
+                singleLine = true,
+                textStyle = TextStyle(fontFamily = FontFamily.Monospace),
+            )
+            Button(
+                onClick = {
+                    if (newRuleLabel.isNotBlank() && newRulePattern.isNotBlank()) {
+                        FocusSessionState.addBlockRule(
+                            cz.aaa.unit2026.blocking.BlockRule(
+                                label = newRuleLabel.trim(),
+                                pattern = newRulePattern.trim(),
+                            )
+                        )
+                        newRuleLabel = ""
+                        newRulePattern = ""
+                    }
+                },
+            ) { Text("+") }
+        }
+
+        Spacer(Modifier.height(spacing.lg))
+        HorizontalDivider()
+        Spacer(Modifier.height(spacing.lg))
+
+        // Blocked apps — Android: installed apps, Desktop: seen apps
+        Text("Blocked apps", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "Toggle to block entire apps during focus sessions.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(spacing.sm))
+
+        val appList = if (installedApps.isNotEmpty()) {
+            installedApps.map { it.appId to it.appName }
+        } else {
+            seenApps.values.sortedBy { it.appId }.map { it.appId to it.appName }
+        }
+
+        if (appList.isEmpty()) {
             Text(
-                "⚠\uFE0F App list not available on this platform. Desktop blacklist configuration coming soon.",
+                "No apps seen yet. Apps will appear here as you use your device.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            installedApps.forEach { app ->
-                val isBlocked = app.appId in blacklist
+            appList.forEach { (appId, appName) ->
+                val isBlocked = appId in blacklist
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        app.appName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(appName, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            appId,
+                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Checkbox(
                         checked = isBlocked,
                         onCheckedChange = { checked ->
-                            if (checked) FocusSessionState.addToBlacklist(app.appId)
-                            else FocusSessionState.removeFromBlacklist(app.appId)
+                            if (checked) FocusSessionState.addToBlacklist(appId)
+                            else FocusSessionState.removeFromBlacklist(appId)
                         },
                     )
                 }
