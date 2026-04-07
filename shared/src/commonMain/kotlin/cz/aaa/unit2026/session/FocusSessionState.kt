@@ -45,7 +45,7 @@ object FocusSessionState {
     private val _durationSeconds = MutableStateFlow(25L * 60)
 
     // --- Blocking ---
-    private val _isStrictMode = MutableStateFlow(false)
+    private val _isStrictMode = MutableStateFlow(true)
     val isStrictMode: StateFlow<Boolean> = _isStrictMode.asStateFlow()
 
     private val _blacklist = MutableStateFlow(DEFAULT_BLACKLIST.toMutableSet() as Set<String>)

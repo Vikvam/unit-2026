@@ -74,7 +74,7 @@ class FocusAccessibilityService : AccessibilityService() {
             val category = info.category.takeIf { it >= 0 } ?: AppCategory.UNDEFINED
             label to category
         } catch (e: PackageManager.NameNotFoundException) {
-            packageName.substringAfterLast('.') to AppCategory.UNDEFINED
+            packageName to AppCategory.UNDEFINED
         }
     }
 
