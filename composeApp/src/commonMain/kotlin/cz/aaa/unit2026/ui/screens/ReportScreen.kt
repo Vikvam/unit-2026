@@ -13,12 +13,17 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import cz.aaa.unit2026.LocalTrackingClient
 import cz.aaa.unit2026.ui.components.SessionTimeline
-import cz.aaa.unit2026.ui.components.TimelineSegment
+import cz.aaa.unit2026.ui.report.ReportStateHolder
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 import org.jetbrains.compose.resources.stringResource
 import unit2026.composeapp.generated.resources.Res
@@ -28,18 +33,13 @@ import unit2026.composeapp.generated.resources.report_title
 import unit2026.composeapp.generated.resources.report_total
 
 @Composable
-fun ReportScreen(
-    modifier: Modifier = Modifier,
-) {
+fun ReportScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
+    val client = LocalTrackingClient.current
+    val scope = rememberCoroutineScope()
+    val holder = remember(client) { ReportStateHolder(client, scope) }
+    val uiState by holder.uiState.collectAsState()
     val focus = OpenJetTracksTheme.focus
-
-    // Placeholder data — will come from ViewModel
-    val placeholderSegments = listOf(
-        TimelineSegment(0f, 0.4f, focused = true),
-        TimelineSegment(0.4f, 0.55f, focused = false),
-        TimelineSegment(0.55f, 1f, focused = true),
-    )
 
     Column(
         modifier = modifier
@@ -52,53 +52,55 @@ fun ReportScreen(
             style = MaterialTheme.typography.headlineMedium,
         )
 
-        // Timeline card
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(spacing.md)) {
-                SessionTimeline(segments = placeholderSegments)
+        if (uiState.hasSession) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(spacing.md)) {
+                    SessionTimeline(segments = uiState.segments)
+                }
             }
-        }
 
-        // Stats row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.md),
-        ) {
-            StatCard(
-                value = "82%",
-                label = stringResource(Res.string.report_focused, ""),
-                color = focus.active,
-                containerColor = focus.activeContainer,
-                modifier = Modifier.weight(1f),
-            )
-            StatCard(
-                value = "18%",
-                label = stringResource(Res.string.report_distracted, ""),
-                color = focus.distracted,
-                containerColor = focus.distractedContainer,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        // Total session card
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(spacing.md)) {
-                Text(
-                    text = stringResource(Res.string.report_total, "25:00"),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
+            ) {
+                StatCard(
+                    value = "${uiState.focusPercent}%",
+                    label = stringResource(Res.string.report_focused, "").trimEnd(),
+                    color = focus.active,
+                    containerColor = focus.activeContainer,
+                    modifier = Modifier.weight(1f),
+                )
+                StatCard(
+                    value = "${uiState.distractedPercent}%",
+                    label = stringResource(Res.string.report_distracted, "").trimEnd(),
+                    color = focus.distracted,
+                    containerColor = focus.distractedContainer,
+                    modifier = Modifier.weight(1f),
                 )
             }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(spacing.md)) {
+                    Text(
+                        text = stringResource(Res.string.report_total, uiState.durationLabel),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        } else {
+            Spacer(Modifier.height(spacing.xxl))
+            Text(
+                text = "No session completed yet. Start a timer to begin tracking.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -115,9 +117,7 @@ private fun StatCard(
         colors = CardDefaults.cardColors(containerColor = containerColor),
         modifier = modifier,
     ) {
-        Column(
-            modifier = Modifier.padding(OpenJetTracksTheme.spacing.md),
-        ) {
+        Column(modifier = Modifier.padding(OpenJetTracksTheme.spacing.md)) {
             Text(
                 text = value,
                 fontSize = 32.sp,
@@ -126,7 +126,7 @@ private fun StatCard(
             )
             Spacer(Modifier.height(OpenJetTracksTheme.spacing.xs))
             Text(
-                text = label.trimEnd(),
+                text = label,
                 style = MaterialTheme.typography.bodyMedium,
                 color = color.copy(alpha = 0.8f),
             )

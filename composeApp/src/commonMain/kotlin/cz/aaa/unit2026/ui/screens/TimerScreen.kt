@@ -53,11 +53,8 @@ import unit2026.composeapp.generated.resources.timer_tap_hint
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimerScreen(
-    modifier: Modifier = Modifier,
-) {
+fun TimerScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
-
     val durationMinutes by SessionSettings.durationMinutes.collectAsState()
     val isRunning by FocusSessionState.isRunning.collectAsState()
     val isPaused by FocusSessionState.isPaused.collectAsState()
@@ -76,22 +73,13 @@ fun TimerScreen(
         0f
     }
 
-    val displayMinutes: Long
-    val displaySeconds: Long
-    if (isRunning) {
-        displayMinutes = remainingSeconds / 60
-        displaySeconds = remainingSeconds % 60
-    } else {
-        displayMinutes = durationMinutes.toLong()
-        displaySeconds = 0L
-    }
+    val displayMinutes = if (isRunning) remainingSeconds / 60 else durationMinutes.toLong()
+    val displaySeconds = if (isRunning) remainingSeconds % 60 else 0L
     val label = "%d:%02d".format(displayMinutes, displaySeconds)
 
-    // Bottom sheet only opens when idle or paused
     val canConfigure = !isRunning || isPaused
     var showSessionParams by remember { mutableStateOf(false) }
 
-    // Press-down scale effect on the ring
     var pressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.95f else 1f,
@@ -129,7 +117,6 @@ fun TimerScreen(
 
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
             if (!isRunning) {
-                // Idle: show Start
                 Button(
                     onClick = {
                         FocusSessionState.setDurationMinutes(durationMinutes)
@@ -141,18 +128,20 @@ fun TimerScreen(
                     Text(stringResource(Res.string.timer_start))
                 }
             } else {
-                // Running or paused: show Pause/Resume + Stop
                 Button(
                     onClick = {
                         if (isPaused) FocusSessionState.resumeSession()
                         else FocusSessionState.pauseSession()
                     },
                     shape = RoundedCornerShape(24.dp),
-                    colors = if (isPaused) ButtonDefaults.buttonColors()
-                    else ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
+                    colors = if (isPaused) {
+                        ButtonDefaults.buttonColors()
+                    } else {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    },
                     modifier = Modifier.height(48.dp).width(120.dp),
                 ) {
                     Text(
@@ -198,7 +187,6 @@ private fun SessionParamsSheet(durationMinutes: Int) {
             .padding(bottom = spacing.xl),
         verticalArrangement = Arrangement.spacedBy(spacing.lg),
     ) {
-        // Duration
         Column {
             Text(
                 text = stringResource(Res.string.settings_duration),
@@ -227,7 +215,6 @@ private fun SessionParamsSheet(durationMinutes: Int) {
             }
         }
 
-        // Strict mode
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,8 +236,5 @@ private fun SessionParamsSheet(durationMinutes: Int) {
                 onCheckedChange = { FocusSessionState.setStrictMode(it) },
             )
         }
-
-        // TODO: Whitelist — apps/websites allowed during focus sessions
-        // TODO: Blocklist — apps/websites always blocked during focus sessions
     }
 }
