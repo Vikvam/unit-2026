@@ -7,6 +7,9 @@
     <!-- Timer screen -->
     <string name="timer_start">Spustiť</string>
     <string name="timer_stop">Zastaviť</string>
+    <string name="timer_pause">Pauza</string>
+    <string name="timer_resume">Pokračovať</string>
+    <string name="timer_tap_hint">klepnutím nastavíte</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Nastavenia</string>
@@ -19,6 +22,9 @@
     <string name="theme_system">Systém</string>
     <string name="theme_light">Svetlý</string>
     <string name="theme_dark">Tmavý</string>
+    <string name="settings_duration">Dĺžka sedenia</string>
+    <string name="settings_duration_desc">Dĺžka sústredeného sedenia v minútach</string>
+    <string name="settings_duration_minutes">%1$d min</string>
 
     <!-- Report screen -->
     <string name="report_title">Prehľad sedenia</string>

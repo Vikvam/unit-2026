@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//mnt/h/hack/**)",
+      "Bash(./gradlew :shared:compileKotlinJvm :server:build)",
+      "Bash(./gradlew :server:test --info)",
+      "Bash(./gradlew :server:test --rerun)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "gitlab"
+  ],
+  "enableAllProjectMcpServers": true
+}

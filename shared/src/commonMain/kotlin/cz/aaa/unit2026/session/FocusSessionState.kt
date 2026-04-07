@@ -9,7 +9,9 @@ import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.ForegroundAppMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,17 +20,26 @@ import kotlinx.coroutines.launch
 /**
  * Central state holder connecting the UI to the monitoring and blocking layers.
  *
- * The monitor runs passively from app launch (for debug info + seen apps tracking).
- * Blocking only activates during a session with strict mode on.
+ * The monitor runs passively from init() for debug screen + seenApps tracking.
+ * Blocking only activates during a running, non-paused session with strict mode on.
  */
 object FocusSessionState {
 
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var enforcer: BlockingEnforcer? = null
+    private var timerJob: Job? = null
 
-    // --- Timer ---
+    // --- Session state ---
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+    private val _isPaused = MutableStateFlow(false)
+    val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
+
+    private val _remainingSeconds = MutableStateFlow(0L)
+    val remainingSeconds: StateFlow<Long> = _remainingSeconds.asStateFlow()
+
+    private val _durationSeconds = MutableStateFlow(25L * 60)
 
     // --- Passive monitor output ---
     private val _currentApp = MutableStateFlow<ActiveApp?>(null)
@@ -62,12 +73,10 @@ object FocusSessionState {
         scope.launch {
             monitor.activeApp.collect { app ->
                 _currentApp.value = app
-                // Accumulate seen apps (for desktop blacklist management)
                 if (app.appId !in SELF_APP_IDS) {
                     _seenApps.value = _seenApps.value + (app.appId to app)
                 }
-                // Enforce blocking during active sessions with strict mode
-                if (_isRunning.value && _isStrictMode.value && app.appId !in SELF_APP_IDS) {
+                if (_isRunning.value && !_isPaused.value && _isStrictMode.value && app.appId !in SELF_APP_IDS) {
                     if (shouldBlock(app)) {
                         enforcer.block(app)
                         _blockedApp.value = app
@@ -81,16 +90,56 @@ object FocusSessionState {
         _installedApps.value = apps
     }
 
+    fun setDurationMinutes(minutes: Int) {
+        _durationSeconds.value = minutes.toLong() * 60
+    }
+
     // --- Session controls ---
 
     fun startSession() {
+        if (_isRunning.value) return
         _isRunning.value = true
+        _isPaused.value = false
+        _remainingSeconds.value = _durationSeconds.value
+        startTimer()
+    }
+
+    fun pauseSession() {
+        if (!_isRunning.value || _isPaused.value) return
+        _isPaused.value = true
+        timerJob?.cancel()
+        timerJob = null
+        enforcer?.unblock()
+        _blockedApp.value = null
+    }
+
+    fun resumeSession() {
+        if (!_isRunning.value || !_isPaused.value) return
+        _isPaused.value = false
+        startTimer()
     }
 
     fun stopSession() {
         _isRunning.value = false
+        _isPaused.value = false
+        _remainingSeconds.value = 0L
+        timerJob?.cancel()
+        timerJob = null
         enforcer?.unblock()
         _blockedApp.value = null
+    }
+
+    private fun startTimer() {
+        timerJob?.cancel()
+        timerJob = scope.launch {
+            while (_remainingSeconds.value > 0) {
+                delay(1000L)
+                if (!_isPaused.value) {
+                    _remainingSeconds.value = (_remainingSeconds.value - 1).coerceAtLeast(0)
+                }
+            }
+            stopSession()
+        }
     }
 
     // --- Settings ---
