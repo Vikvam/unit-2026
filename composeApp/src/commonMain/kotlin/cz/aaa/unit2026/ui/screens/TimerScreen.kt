@@ -17,6 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.components.TimerBubble
 import cz.aaa.unit2026.ui.components.TimerRing
 import cz.aaa.unit2026.ui.components.TimerState
@@ -37,9 +40,9 @@ fun TimerScreen(
 ) {
     val spacing = OpenJetTracksTheme.spacing
 
-    // Placeholder state — will be replaced by ViewModel collection
+    val isRunning by FocusSessionState.isRunning.collectAsState()
     val progress = 0f
-    val timerState = TimerState.Idle
+    val timerState = if (isRunning) TimerState.Running else TimerState.Idle
     val label = "25:00"
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -57,14 +60,14 @@ fun TimerScreen(
             Spacer(Modifier.height(spacing.xl))
 
             Row {
-                Button(onClick = { /* TODO: start / pause */ }) {
+                Button(onClick = { FocusSessionState.startSession() }) {
                     Text(stringResource(Res.string.timer_start))
                 }
 
                 Spacer(Modifier.width(spacing.md))
 
                 OutlinedButton(
-                    onClick = { /* TODO: stop session */ },
+                    onClick = { FocusSessionState.stopSession() },
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),

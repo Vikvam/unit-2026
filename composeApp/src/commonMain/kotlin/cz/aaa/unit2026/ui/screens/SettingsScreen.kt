@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
@@ -28,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.theme.AppLocale
 import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
@@ -62,6 +67,9 @@ fun SettingsScreen(
     val spacing = OpenJetTracksTheme.spacing
     val currentMode by ThemeState.mode.collectAsState()
     val currentLocale by LocaleState.locale.collectAsState()
+    val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
+    val blacklist by FocusSessionState.blacklist.collectAsState()
+    val installedApps by FocusSessionState.installedApps.collectAsState()
 
     Column(
         modifier = modifier
@@ -80,8 +88,8 @@ fun SettingsScreen(
         SettingsRow(
             label = stringResource(Res.string.settings_strict_mode),
             description = stringResource(Res.string.settings_strict_mode_desc),
-            checked = false,
-            onCheckedChange = { /* TODO */ },
+            checked = isStrictMode,
+            onCheckedChange = { FocusSessionState.setStrictMode(it) },
         )
 
         Spacer(Modifier.height(spacing.lg))
@@ -149,6 +157,50 @@ fun SettingsScreen(
                         onClick = {
                             LocaleState.setLocale(locale)
                             languageExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(spacing.lg))
+        HorizontalDivider()
+        Spacer(Modifier.height(spacing.lg))
+
+        // Blocked apps
+        Text("Blocked apps", style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "These apps will be blocked when strict mode is on.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(spacing.sm))
+
+        if (installedApps.isEmpty()) {
+            Text(
+                "⚠\uFE0F App list not available on this platform. Desktop blacklist configuration coming soon.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            installedApps.forEach { app ->
+                val isBlocked = app.appId in blacklist
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        app.appName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Checkbox(
+                        checked = isBlocked,
+                        onCheckedChange = { checked ->
+                            if (checked) FocusSessionState.addToBlacklist(app.appId)
+                            else FocusSessionState.removeFromBlacklist(app.appId)
                         },
                     )
                 }

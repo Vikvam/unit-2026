@@ -10,10 +10,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import cz.aaa.unit2026.blocking.AndroidBlockingEnforcer
 import cz.aaa.unit2026.monitoring.AndroidForegroundAppMonitor
+import cz.aaa.unit2026.session.FocusSessionState
+import cz.aaa.unit2026.session.loadInstalledApps
 
 class MainActivity : ComponentActivity() {
-
-    private val enforcer by lazy { AndroidBlockingEnforcer(applicationContext) }
 
     private val requestNotificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -29,8 +29,12 @@ class MainActivity : ComponentActivity() {
             requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        setContent {
-            MonitorDemoScreen(AndroidForegroundAppMonitor(), enforcer)
-        }
+        FocusSessionState.init(
+            monitor = AndroidForegroundAppMonitor(),
+            enforcer = AndroidBlockingEnforcer(applicationContext),
+        )
+        FocusSessionState.setInstalledApps(loadInstalledApps(packageManager))
+
+        setContent { App() }
     }
 }
