@@ -9,4 +9,8 @@ data class ActiveApp(
     val windowTitle: String?,
     /** Epoch milliseconds at time of capture. */
     val capturedAtMs: Long,
+    /** Window geometry — Desktop only, null on Android. */
+    val geometry: WindowGeometry? = null,
 )
+
+data class WindowGeometry(val x: Int, val y: Int, val width: Int, val height: Int, val scale: Float = 1f)
