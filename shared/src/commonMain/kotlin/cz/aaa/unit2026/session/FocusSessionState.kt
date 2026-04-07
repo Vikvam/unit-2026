@@ -80,6 +80,9 @@ object FocusSessionState {
                     if (shouldBlock(app)) {
                         enforcer.block(app)
                         _blockedApp.value = app
+                    } else {
+                        enforcer.unblock()
+                        _blockedApp.value = null
                     }
                 }
             }
