@@ -1,0 +1,33 @@
+<resources>
+    <!-- Navigation -->
+    <string name="nav_timer">Časovač</string>
+    <string name="nav_settings">Nastavenia</string>
+    <string name="nav_report">Prehľad</string>
+
+    <!-- Timer screen -->
+    <string name="timer_start">Spustiť</string>
+    <string name="timer_stop">Zastaviť</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Nastavenia</string>
+    <string name="settings_strict_mode">Prísny režim</string>
+    <string name="settings_strict_mode_desc">Blokovať všetky nepovolené aplikácie počas sedenia</string>
+    <string name="settings_theme">Vzhľad</string>
+    <string name="settings_theme_desc">Svetlý, tmavý alebo podľa systému</string>
+    <string name="settings_language">Jazyk</string>
+    <string name="settings_language_desc">Vyberte jazyk aplikácie</string>
+    <string name="theme_system">Systém</string>
+    <string name="theme_light">Svetlý</string>
+    <string name="theme_dark">Tmavý</string>
+
+    <!-- Report screen -->
+    <string name="report_title">Prehľad sedenia</string>
+    <string name="report_focused">Sústredenie: %1$s</string>
+    <string name="report_distracted">Rozptýlenie: %1$s</string>
+    <string name="report_total">%1$s celkom</string>
+    <string name="report_timeline">Priebeh sedenia</string>
+
+    <!-- Blocking overlay -->
+    <string name="blocking_title">Sústreď sa!</string>
+    <string name="blocking_message">%1$s je počas sedenia zablokovaná.</string>
+</resources>

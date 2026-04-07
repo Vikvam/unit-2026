@@ -1,5 +1,6 @@
 package cz.aaa.unit2026.ui.screens
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -10,29 +11,28 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
-import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import cz.aaa.unit2026.ui.navigation.NavigationDestination
+import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
-    val windowSizeClass = calculateWindowSizeClass()
-    val useNavRail = windowSizeClass.widthSizeClass >= WindowWidthSizeClass.Medium
+    BoxWithConstraints(modifier = modifier) {
+        val useNavRail = maxWidth >= 600.dp
 
     var selected by rememberSaveable { mutableStateOf(NavigationDestination.Timer) }
 
-    if (useNavRail) {
-        ExpandedHome(selected = selected, onSelect = { selected = it }, modifier = modifier)
-    } else {
-        CompactHome(selected = selected, onSelect = { selected = it }, modifier = modifier)
+        if (useNavRail) {
+            ExpandedHome(selected = selected, onSelect = { selected = it })
+        } else {
+            CompactHome(selected = selected, onSelect = { selected = it })
+        }
     }
 }
 
@@ -53,8 +53,8 @@ private fun CompactHome(
                     NavigationBarItem(
                         selected = selected == dest,
                         onClick = { onSelect(dest) },
-                        icon = { Icon(dest.icon, contentDescription = dest.label) },
-                        label = { Text(dest.label) },
+                        icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
+                        label = { Text(stringResource(dest.labelRes)) },
                     )
                 }
             }
@@ -82,8 +82,8 @@ private fun ExpandedHome(
                 NavigationRailItem(
                     selected = selected == dest,
                     onClick = { onSelect(dest) },
-                    icon = { Icon(dest.icon, contentDescription = dest.label) },
-                    label = { Text(dest.label) },
+                    icon = { Icon(dest.icon, contentDescription = stringResource(dest.labelRes)) },
+                    label = { Text(stringResource(dest.labelRes)) },
                 )
             }
         }

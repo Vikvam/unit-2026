@@ -43,9 +43,15 @@ val LocalFocusColors = staticCompositionLocalOf { LightFocusColors }
 
 @Composable
 fun OpenJetTracksTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.System,
     content: @Composable () -> Unit,
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val focusColors = if (darkTheme) DarkFocusColors else LightFocusColors
 

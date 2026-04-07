@@ -18,6 +18,10 @@ import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.components.TimerRing
 import cz.aaa.unit2026.ui.components.TimerState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import org.jetbrains.compose.resources.stringResource
+import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.timer_start
+import unit2026.composeapp.generated.resources.timer_stop
 
 /**
  * Main screen — shows the session timer and start/pause/stop controls.
@@ -50,7 +54,7 @@ fun TimerScreen(
 
         Row {
             Button(onClick = { /* TODO: start / pause */ }) {
-                Text("Start")
+                Text(stringResource(Res.string.timer_start))
             }
 
             Spacer(Modifier.width(spacing.md))
@@ -61,7 +65,7 @@ fun TimerScreen(
                     contentColor = MaterialTheme.colorScheme.error,
                 ),
             ) {
-                Text("Stop")
+                Text(stringResource(Res.string.timer_stop))
             }
         }
     }

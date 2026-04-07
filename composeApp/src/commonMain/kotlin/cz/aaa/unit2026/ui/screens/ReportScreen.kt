@@ -13,13 +13,13 @@ import androidx.compose.ui.Modifier
 import cz.aaa.unit2026.ui.components.SessionTimeline
 import cz.aaa.unit2026.ui.components.TimelineSegment
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import org.jetbrains.compose.resources.stringResource
+import unit2026.composeapp.generated.resources.Res
+import unit2026.composeapp.generated.resources.report_distracted
+import unit2026.composeapp.generated.resources.report_focused
+import unit2026.composeapp.generated.resources.report_title
+import unit2026.composeapp.generated.resources.report_total
 
-/**
- * Post-session report — shows whether focus was respected, with a timeline
- * of focused vs. distracted periods.
- *
- * TODO: wire to a shared ViewModel once :shared exposes completed session data.
- */
 @Composable
 fun ReportScreen(
     modifier: Modifier = Modifier,
@@ -40,7 +40,7 @@ fun ReportScreen(
         verticalArrangement = Arrangement.Top,
     ) {
         Text(
-            text = "Session Report",
+            text = stringResource(Res.string.report_title),
             style = MaterialTheme.typography.headlineMedium,
         )
 
@@ -51,7 +51,7 @@ fun ReportScreen(
         Spacer(Modifier.height(spacing.lg))
 
         Text(
-            text = "Focused: 82%",
+            text = stringResource(Res.string.report_focused, "82%"),
             style = MaterialTheme.typography.titleMedium,
             color = OpenJetTracksTheme.focus.active,
         )
@@ -59,7 +59,7 @@ fun ReportScreen(
         Spacer(Modifier.height(spacing.sm))
 
         Text(
-            text = "Distracted: 18%",
+            text = stringResource(Res.string.report_distracted, "18%"),
             style = MaterialTheme.typography.titleMedium,
             color = OpenJetTracksTheme.focus.distracted,
         )
@@ -67,7 +67,7 @@ fun ReportScreen(
         Spacer(Modifier.height(spacing.lg))
 
         Text(
-            text = "25:00 total session",
+            text = stringResource(Res.string.report_total, "25:00"),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
