@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import cz.aaa.unit2026.ui.settings.SettingsStateHolder
 import cz.aaa.unit2026.ui.theme.AppLocale
 import cz.aaa.unit2026.ui.theme.LocaleState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
@@ -56,10 +57,10 @@ private val ThemeMode.labelRes: StringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(
-    modifier: Modifier = Modifier,
-) {
+fun SettingsScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
+    val holder = remember { SettingsStateHolder() }
+    val uiState by holder.uiState.collectAsState()
     val currentMode by ThemeState.mode.collectAsState()
     val currentLocale by LocaleState.locale.collectAsState()
 
@@ -76,12 +77,11 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(spacing.lg))
 
-        // Strict mode
         SettingsRow(
             label = stringResource(Res.string.settings_strict_mode),
             description = stringResource(Res.string.settings_strict_mode_desc),
-            checked = false,
-            onCheckedChange = { /* TODO */ },
+            checked = uiState.isStrictModeEnabled,
+            onCheckedChange = holder::onStrictModeChanged,
         )
 
         Spacer(Modifier.height(spacing.lg))
