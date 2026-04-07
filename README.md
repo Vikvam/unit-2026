@@ -88,7 +88,5 @@ Or use the run configuration in your IDE.
 | UI | Compose Multiplatform |
 | Async / State | Coroutines + Flow |
 | Networking | Ktor Client + Ktor Server |
-| Local DB | SQLDelight |
-| DI | Koin |
-| Desktop OS APIs | JNA |
+| Desktop OS APIs | qdbus, journalctl (KDE/Wayland) |
 | Android OS APIs | UsageStatsManager, AccessibilityService |
