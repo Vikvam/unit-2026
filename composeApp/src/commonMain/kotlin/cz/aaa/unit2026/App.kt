@@ -22,8 +22,8 @@ fun App() {
     LocaleState.locale.collectAsState()
 
     OpenJetTracksTheme(themeMode = themeMode) {
-        Surface(modifier = Modifier.fillMaxSize().safeContentPadding()) {
-            HomeScreen()
+        Surface(modifier = Modifier.fillMaxSize()) {
+            HomeScreen(modifier = Modifier.safeContentPadding())
         }
     }
 }
