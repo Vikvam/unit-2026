@@ -43,6 +43,7 @@ fun TimerRing(
     size: Dp = 240.dp,
     strokeWidth: Dp = 10.dp,
     subtitle: String? = null,
+    labelSize: androidx.compose.ui.unit.TextUnit = 42.sp,
 ) {
     val ringColor = ringColorFor(state)
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
@@ -128,7 +129,7 @@ fun TimerRing(
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = label,
-                fontSize = 42.sp,
+                fontSize = labelSize,
                 fontWeight = FontWeight.Light,
                 letterSpacing = 2.sp,
                 color = MaterialTheme.colorScheme.onBackground,

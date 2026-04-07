@@ -103,5 +103,6 @@ private fun ScreenContent(
         NavigationDestination.Timer -> TimerScreen(modifier = modifier)
         NavigationDestination.Settings -> SettingsScreen(modifier = modifier)
         NavigationDestination.Report -> ReportScreen(modifier = modifier)
+        NavigationDestination.Debug -> DebugScreen(modifier = modifier)
     }
 }

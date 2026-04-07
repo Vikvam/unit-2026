@@ -4,4 +4,4 @@ import cz.aaa.unit2026.tracking.KtorTrackingClient
 import cz.aaa.unit2026.tracking.TrackingClient
 
 internal actual fun createTrackingClient(): TrackingClient =
-    KtorTrackingClient(host = "localhost", port = SERVER_PORT)
+    KtorTrackingClient(host = "unit26.jastr.dev", port = SERVER_PORT)
