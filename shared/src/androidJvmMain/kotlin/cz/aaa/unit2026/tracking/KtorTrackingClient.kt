@@ -45,6 +45,7 @@ private val log: Logger = Logger.getLogger("KtorTrackingClient")
 class KtorTrackingClient(
     private val host: String,
     private val port: Int,
+    private val secure: Boolean = false,
 ) : TrackingClient {
 
     private val _sessionState = MutableStateFlow<TrackingSession?>(null)
@@ -66,7 +67,9 @@ class KtorTrackingClient(
         var backoffMs = 200L
         while (running && coroutineContext.isActive) {
             try {
-                httpClient.webSocket(host = host, port = port, path = "/ws/tracking") {
+                httpClient.webSocket(host = host, port = port, path = "/ws/tracking", request = {
+                    url.protocol = if (secure) io.ktor.http.URLProtocol.WSS else io.ktor.http.URLProtocol.WS
+                }) {
                     outgoingChannel = this.outgoing
                     _isConnected.value = true
                     backoffMs = 200L   // reset on successful connect
@@ -190,8 +193,9 @@ class KtorTrackingClient(
             val local = _sessionState.value
             _sessionState.value = serverSession
             if (local != null && local.pausedAtMs == null && serverSession.pausedAtMs != null) {
-                val extendedTargetEndAtMs = serverSession.targetEndAtMs  // already extended by server
-                sendMessage(ClientMessage.SessionResume(extendedTargetEndAtMs))
+                // We resumed offline but server is still paused — push our resumed state.
+                // Use local.targetEndAtMs which already includes the pause extension we computed offline.
+                sendMessage(ClientMessage.SessionResume(local.targetEndAtMs))
             }
         } else {
             // Server has no active session — push active local session if we have one.
@@ -212,8 +216,13 @@ class KtorTrackingClient(
         if (session != null && session.targetEndAtMs > now) {
             _sessionState.value = session
         } else {
-            // Server has no active session — always enforce this so all clients stay in sync.
-            _sessionState.value = null
+            // Server has no active session. Only null out if our local session is also
+            // inactive — otherwise we may have a valid offline session that the server
+            // doesn't know about yet (e.g. SessionState(null) sent as rejection feedback).
+            val local = _sessionState.value
+            if (local == null || local.stoppedAtMs != null || local.targetEndAtMs <= now) {
+                _sessionState.value = null
+            }
         }
     }
 

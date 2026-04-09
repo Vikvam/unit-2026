@@ -74,8 +74,6 @@ object FocusSessionState {
     private val _remainingSeconds = MutableStateFlow(0L)
     val remainingSeconds: StateFlow<Long> = _remainingSeconds.asStateFlow()
 
-    private val _durationSeconds = MutableStateFlow(25L * 60)
-
     // --- Monitor status ---
     private val _monitorStatus = MutableStateFlow(MonitorStatus.IDLE)
     val monitorStatus: StateFlow<MonitorStatus> = _monitorStatus.asStateFlow()
@@ -186,52 +184,6 @@ object FocusSessionState {
         }
     }
 
-    fun setDurationMinutes(minutes: Int) {
-        _durationSeconds.value = minutes.toLong() * 60
-    }
-
-    // --- Session controls ---
-
-    fun startSession() {
-        if (_isRunning.value) return
-        _isRunning.value = true
-        _isPaused.value = false
-        _remainingSeconds.value = _durationSeconds.value
-        sessionStartMs = System.currentTimeMillis()
-        plannedSeconds = _durationSeconds.value
-        currentDistractions.clear()
-        startTimer()
-    }
-
-    fun pauseSession() {
-        if (!_isRunning.value || _isPaused.value) return
-        _isPaused.value = true
-        timerJob?.cancel()
-        timerJob = null
-        enforcer?.unblock()
-        _blockedApp.value = null
-    }
-
-    fun resumeSession() {
-        if (!_isRunning.value || !_isPaused.value) return
-        _isPaused.value = false
-        startTimer()
-    }
-
-    fun stopSession() {
-        if (_isRunning.value && sessionStartMs > 0L) {
-            saveSession(completed = _remainingSeconds.value == 0L)
-        }
-        _isRunning.value = false
-        _isPaused.value = false
-        _remainingSeconds.value = 0L
-        timerJob?.cancel()
-        timerJob = null
-        enforcer?.unblock()
-        _blockedApp.value = null
-        persistAppUsage()
-    }
-
     /**
      * Called from the App-level bridge whenever [TrackingClient.sessionState] changes.
      *
@@ -326,19 +278,6 @@ object FocusSessionState {
         currentDistractions.clear()
         persistSessionHistory()
         persistAppUsage()
-    }
-
-    private fun startTimer() {
-        timerJob?.cancel()
-        timerJob = scope.launch {
-            while (_remainingSeconds.value > 0) {
-                delay(1000L)
-                if (!_isPaused.value) {
-                    _remainingSeconds.value = (_remainingSeconds.value - 1).coerceAtLeast(0)
-                }
-            }
-            stopSession()
-        }
     }
 
     // --- Settings ---

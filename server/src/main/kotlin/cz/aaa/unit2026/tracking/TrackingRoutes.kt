@@ -71,7 +71,7 @@ fun Route.trackingRoutes(registry: SessionRegistry) {
                     }
 
                     is ClientMessage.SessionResume -> {
-                        val resumed = registry.resumeSession(message.extendedTargetEndAtMs)
+                        val resumed = registry.resumeSession()
                         if (resumed != null) {
                             log.info("Session resumed [{}] sessionId={}", clientTag, resumed.sessionId)
                             registry.broadcast(ServerMessage.SessionResumed(resumed))

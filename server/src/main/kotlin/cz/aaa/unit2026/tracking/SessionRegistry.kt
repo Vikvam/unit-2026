@@ -83,12 +83,17 @@ class SessionRegistry {
 
     /**
      * Resumes a paused session, extending [TrackingSession.targetEndAtMs] by the pause duration
-     * so no focus time is lost. Returns the updated session, or null if not paused.
+     * so no focus time is lost. The extension is computed server-side from the actual pause
+     * timestamps — the client hint is ignored. Returns the updated session, or null if not paused.
      */
-    suspend fun resumeSession(extendedTargetEndAtMs: Long): TrackingSession? = mutex.withLock {
+    suspend fun resumeSession(): TrackingSession? = mutex.withLock {
         val current = activeSession ?: return@withLock null
-        if (current.pausedAtMs == null) return@withLock null   // not paused
-        val resumed = current.copy(pausedAtMs = null, targetEndAtMs = extendedTargetEndAtMs)
+        val pausedAt = current.pausedAtMs ?: return@withLock null   // not paused
+        val pauseDuration = System.currentTimeMillis() - pausedAt
+        val resumed = current.copy(
+            pausedAtMs = null,
+            targetEndAtMs = current.targetEndAtMs + pauseDuration,
+        )
         activeSession = resumed
         resumed
     }
