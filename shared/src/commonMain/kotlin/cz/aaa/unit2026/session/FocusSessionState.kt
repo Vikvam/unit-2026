@@ -10,6 +10,7 @@ import cz.aaa.unit2026.blocking.DEFAULT_BLOCK_RULES
 import cz.aaa.unit2026.blocking.InstalledApp
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.ForegroundAppMonitor
+import cz.aaa.unit2026.monitoring.MonitorStatus
 import cz.aaa.unit2026.tracking.TrackingSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -75,6 +76,10 @@ object FocusSessionState {
 
     private val _durationSeconds = MutableStateFlow(25L * 60)
 
+    // --- Monitor status ---
+    private val _monitorStatus = MutableStateFlow(MonitorStatus.IDLE)
+    val monitorStatus: StateFlow<MonitorStatus> = _monitorStatus.asStateFlow()
+
     // --- Passive monitor output ---
     private val _currentApp = MutableStateFlow<ActiveApp?>(null)
     val currentApp: StateFlow<ActiveApp?> = _currentApp.asStateFlow()
@@ -106,6 +111,9 @@ object FocusSessionState {
         this.storage = storage
         loadAll()
         monitor.start()
+        scope.launch {
+            monitor.status.collect { _monitorStatus.value = it }
+        }
         scope.launch {
             monitor.activeApp.collect { app ->
                 _currentApp.value = app

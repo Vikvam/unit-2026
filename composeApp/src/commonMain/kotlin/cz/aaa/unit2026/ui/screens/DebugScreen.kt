@@ -11,12 +11,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import cz.aaa.unit2026.blocking.BlockRule
 import cz.aaa.unit2026.monitoring.ActiveApp
+import cz.aaa.unit2026.monitoring.MonitorStatus
 import cz.aaa.unit2026.session.FocusSessionState
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
 
 @Composable
 fun DebugScreen(modifier: Modifier = Modifier) {
     val spacing = OpenJetTracksTheme.spacing
+    val monitorStatus by FocusSessionState.monitorStatus.collectAsState()
     val current by FocusSessionState.currentApp.collectAsState()
     val isRunning by FocusSessionState.isRunning.collectAsState()
     val isStrictMode by FocusSessionState.isStrictMode.collectAsState()
@@ -33,6 +35,31 @@ fun DebugScreen(modifier: Modifier = Modifier) {
     ) {
         item {
             Text("Debug", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+        }
+
+        if (monitorStatus == MonitorStatus.FAILED) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(spacing.xs),
+                    ) {
+                        Text(
+                            "Monitor unavailable",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Text(
+                            "Active window monitoring failed to start. A required system dependency may be missing (e.g. qdbus). Check stderr for details.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                }
+            }
         }
 
         // Session status

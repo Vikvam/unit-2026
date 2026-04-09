@@ -23,6 +23,9 @@ class KdeWaylandAppMonitor(
     private val _activeApp = MutableSharedFlow<ActiveApp>(replay = 1)
     override val activeApp: Flow<ActiveApp> = _activeApp.distinctUntilChanged()
 
+    private val _status = MutableStateFlow(MonitorStatus.IDLE)
+    override val status: StateFlow<MonitorStatus> = _status.asStateFlow()
+
     private var tailJob: Job? = null
     private val scriptFile: File by lazy { writeScriptToTemp() }
 
@@ -30,9 +33,11 @@ class KdeWaylandAppMonitor(
         try {
             loadKwinScript()
         } catch (e: Exception) {
-            // qdbus not available or KWin scripting unavailable — monitor degrades gracefully
+            System.err.println("KdeWaylandAppMonitor: failed to start — ${e.message}")
+            _status.value = MonitorStatus.FAILED
             return
         }
+        _status.value = MonitorStatus.RUNNING
         tailJob = scope.launch(Dispatchers.IO) {
             tailJournald()
         }
@@ -49,6 +54,8 @@ class KdeWaylandAppMonitor(
     }
 
     private fun loadKwinScript() {
+        // Unload any leftover script from a previous run (e.g. after a crash)
+        runCatching { qdbus("org.kde.kwin.Scripting.unloadScript", PLUGIN_NAME) }
         qdbus("org.kde.kwin.Scripting.loadScript", scriptFile.absolutePath, PLUGIN_NAME)
         qdbus("org.kde.kwin.Scripting.start")
     }
@@ -116,9 +123,18 @@ class KdeWaylandAppMonitor(
         return resourceClass
     }
 
+    private val qdbusCmd: String by lazy {
+        listOf("qdbus", "qdbus-qt6", "qdbus6", "qdbus-qt5").first { name ->
+            runCatching {
+                ProcessBuilder("which", name)
+                    .redirectErrorStream(true).start().waitFor() == 0
+            }.getOrDefault(false)
+        }
+    }
+
     private fun qdbus(method: String, vararg args: String) {
         ProcessBuilder(
-            "qdbus", "org.kde.KWin", "/Scripting", method, *args
+            qdbusCmd, "org.kde.KWin", "/Scripting", method, *args
         ).start().waitFor()
     }
 
@@ -137,7 +153,9 @@ function emit(w) {
     var scale = 1;
     try { scale = w.output.devicePixelRatio; } catch(e) {}
     var S = "|&|";
-    print("$LOG_PREFIX" + w.caption + S + w.resourceClass + S + w.pid + S + g.x + S + g.y + S + g.width + S + g.height + S + scale);
+    var msg = "$LOG_PREFIX" + w.caption + S + w.resourceClass + S + w.pid + S + g.x + S + g.y + S + g.width + S + g.height + S + scale;
+    print(msg);
+    console.info(msg);
 }
 
 function trackWindow(w) {

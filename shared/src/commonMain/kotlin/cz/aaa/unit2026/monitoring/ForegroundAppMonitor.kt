@@ -1,6 +1,7 @@
 package cz.aaa.unit2026.monitoring
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /**
  * Observes which app the user is currently focused on.
@@ -14,6 +15,16 @@ import kotlinx.coroutines.flow.Flow
  */
 interface ForegroundAppMonitor {
     val activeApp: Flow<ActiveApp>
+    val status: StateFlow<MonitorStatus>
     fun start()
     fun stop()
+}
+
+enum class MonitorStatus {
+    /** Not yet started. */
+    IDLE,
+    /** Running and monitoring the foreground app. */
+    RUNNING,
+    /** Failed to start — a required system dependency is missing or unavailable. */
+    FAILED,
 }
