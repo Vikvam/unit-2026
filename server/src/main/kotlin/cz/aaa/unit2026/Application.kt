@@ -13,7 +13,7 @@ import io.ktor.server.websocket.*
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
-    embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
+    embeddedServer(Netty, port = SERVER_LISTEN_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
 
