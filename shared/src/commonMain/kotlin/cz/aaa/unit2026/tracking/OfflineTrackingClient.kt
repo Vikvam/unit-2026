@@ -20,6 +20,8 @@ class OfflineTrackingClient : TrackingClient {
     private val _isConnected = MutableStateFlow(false)
     override val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
+    override val accountId: StateFlow<String?> = MutableStateFlow(null).asStateFlow()
+
     override suspend fun run(deviceId: String) {
         // No server — nothing to connect to.
     }
@@ -51,4 +53,10 @@ class OfflineTrackingClient : TrackingClient {
     }
 
     override fun disconnect() = Unit
+
+    override suspend fun createLinkingCode(): String =
+        throw UnsupportedOperationException("Offline client has no linking backend")
+
+    override suspend fun redeemLinkingCode(code: String): String =
+        throw UnsupportedOperationException("Offline client has no linking backend")
 }

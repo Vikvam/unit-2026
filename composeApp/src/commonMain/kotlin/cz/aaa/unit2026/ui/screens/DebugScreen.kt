@@ -9,11 +9,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import cz.aaa.unit2026.LocalTrackingClient
 import cz.aaa.unit2026.blocking.BlockRule
 import cz.aaa.unit2026.monitoring.ActiveApp
 import cz.aaa.unit2026.monitoring.MonitorStatus
 import cz.aaa.unit2026.session.FocusSessionState
+import cz.aaa.unit2026.tracking.TrackingClient
 import cz.aaa.unit2026.ui.theme.OpenJetTracksTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun DebugScreen(modifier: Modifier = Modifier) {
@@ -36,6 +39,12 @@ fun DebugScreen(modifier: Modifier = Modifier) {
         item {
             Text("Debug", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         }
+
+        // Supabase testing scaffold — wired to Chunk 3 of the Ktor→Supabase migration.
+        // Provisional UI; the real linking flow (with warnings, QR codes, copy-to-clipboard)
+        // will replace this once the migration is verified end-to-end.
+        item { SupabaseStatusCard() }
+        item { LinkingCodeCard() }
 
         if (monitorStatus == MonitorStatus.FAILED) {
             item {
@@ -185,4 +194,137 @@ private fun StatusChip(label: String, active: Boolean) {
         onClick = {},
         label = { Text(label, style = MaterialTheme.typography.labelSmall) },
     )
+}
+
+// ---- Supabase testing scaffold ------------------------------------------
+
+@Composable
+private fun SupabaseStatusCard() {
+    val spacing = OpenJetTracksTheme.spacing
+    val client = LocalTrackingClient.current
+    val connected by client.isConnected.collectAsState()
+    val accountId by client.accountId.collectAsState()
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(spacing.md),
+            verticalArrangement = Arrangement.spacedBy(spacing.sm),
+        ) {
+            Text(
+                "Supabase",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+                StatusChip("Connected", connected)
+            }
+            Text(
+                "account: ${accountId?.take(8)?.plus("…") ?: "(none)"}",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LinkingCodeCard() {
+    val spacing = OpenJetTracksTheme.spacing
+    val client: TrackingClient = LocalTrackingClient.current
+    val scope = rememberCoroutineScope()
+
+    var generatedCode by remember { mutableStateOf<String?>(null) }
+    var generateStatus by remember { mutableStateOf<String?>(null) }
+    var redeemInput by remember { mutableStateOf("") }
+    var redeemStatus by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(spacing.md),
+            verticalArrangement = Arrangement.spacedBy(spacing.md),
+        ) {
+            Text(
+                "Device linking",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            // --- Generate code
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                Button(
+                    enabled = !busy,
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            runCatching { client.createLinkingCode() }
+                                .onSuccess {
+                                    generatedCode = it
+                                    generateStatus = "Expires in 5 minutes."
+                                }
+                                .onFailure {
+                                    generatedCode = null
+                                    generateStatus = "Failed: ${it.message}"
+                                }
+                            busy = false
+                        }
+                    },
+                ) { Text("Generate linking code") }
+
+                generatedCode?.let { code ->
+                    Text(
+                        code,
+                        style = MaterialTheme.typography.displaySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                generateStatus?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // --- Redeem code
+            Column(verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
+                OutlinedTextField(
+                    value = redeemInput,
+                    onValueChange = { redeemInput = it.uppercase() },
+                    label = { Text("Linking code") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Button(
+                    enabled = !busy && redeemInput.isNotBlank(),
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            runCatching { client.redeemLinkingCode(redeemInput.trim()) }
+                                .onSuccess { newAccount ->
+                                    redeemStatus = "Linked. New account: ${newAccount.take(8)}…"
+                                    redeemInput = ""
+                                }
+                                .onFailure {
+                                    redeemStatus = "Failed: ${it.message}"
+                                }
+                            busy = false
+                        }
+                    },
+                ) { Text("Redeem code") }
+                redeemStatus?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
 }

@@ -14,7 +14,7 @@ Unlike passive Pomodoro timers, this app polls OS-level APIs to detect unauthori
 
 ## MVP Features
 
-- **Unified Timer State** — start a session on PC, Android enters focus mode instantly via sync server
+- **Unified Timer State** — start a session on PC, Android enters focus mode instantly via Supabase Realtime
 - **Active Distraction Monitoring** — polls OS for active window/foreground app (no screen recording)
 - **Intervention** — full-screen blocking overlay or force-close unauthorized apps
 - **Offline Resilience** — sessions tracked locally, synced when connection is available
@@ -29,13 +29,16 @@ Unlike passive Pomodoro timers, this app polls OS-level APIs to detect unauthori
 
 ### Gradle Modules
 
-The project is split into three Gradle modules (defined in `settings.gradle.kts`):
+The project is split into two Gradle modules (defined in `settings.gradle.kts`):
 
 ```
 :shared          # KMP library — platform-agnostic business logic, models, data layer
 :composeApp      # KMP application — Compose Multiplatform UI + platform entry points
-:server          # JVM-only — Ktor sync server
 ```
+
+Cross-device sync is handled by a managed **Supabase** backend (Postgres +
+Realtime + Anonymous Auth) rather than a self-hosted module. See the
+[Sync Backend](#sync-backend) section and `supabase/migrations/`.
 
 ### `:shared` — Common Business Logic
 
@@ -43,7 +46,7 @@ The core of the app. A Kotlin Multiplatform **library** that compiles to Android
 
 | Source set | Responsibility |
 |---|---|
-| `commonMain` | Domain models (`FocusSession`, `User`, `Tag`, `AppWhitelist`), repository interfaces, use cases, `expect` declarations for `PlatformMonitor`, Ktor client setup, SQLDelight schema, shared constants |
+| `commonMain` | Domain models (`FocusSession`, `User`, `Tag`, `AppWhitelist`), repository interfaces, use cases, `expect` declarations for `PlatformMonitor`, `TrackingClient` interface + pure `SessionReconciler`, shared constants |
 | `androidMain` | `actual` implementations — `UsageStatsManager`-based `PlatformMonitor`, Android-specific data sources |
 | `jvmMain` | `actual` implementations — JNA-based active-window polling (`PlatformMonitor`) for Windows/macOS/Linux |
 | `jsMain` / `wasmJsMain` | `actual` stubs for web targets (monitoring is not applicable on web) |
@@ -63,12 +66,6 @@ The user-facing application. A Kotlin Multiplatform **application** that depends
 
 **Package:** `cz.aaa.unit2026` · **Depends on:** `:shared`
 
-### `:server` — Sync Server
-
-A standalone JVM application (not multiplatform). Runs a lightweight Ktor server on port `SERVER_PORT` (8080) that synchronizes focus sessions between Android and Desktop clients. Stateless where possible — sessions are owned locally and synced, not streamed live.
-
-**Package:** `cz.aaa.unit2026` · **Depends on:** `:shared`
-
 ### Layer Boundaries (strictly enforced)
 
 ```
@@ -80,7 +77,7 @@ A standalone JVM application (not multiplatform). Runs a lightweight Ktor server
         ↓ delegates to
 :shared / commonMain      →  Repository (owns SSOT, coordinates local + remote)
         ↓ uses
-:shared / commonMain      →  Data Sources: LocalDB (SQLDelight) | KtorClient | PlatformMonitor (expect)
+:shared / commonMain      →  Data Sources: LocalDB (SQLDelight) | SupabaseClient (androidJvmMain) | PlatformMonitor (expect)
         ↓ platform boundary
 :shared / androidMain     →  UsageStatsManager, Android-specific data sources
 :shared / jvmMain         →  JNA + Win32/macOS/Linux active window polling
@@ -113,7 +110,7 @@ A standalone JVM application (not multiplatform). Runs a lightweight Ktor server
 ### Data Layer
 
 - `Repository` is the **single source of truth** for each data type — UI and state holders never bypass it
-- Repositories coordinate local (SQLDelight) and remote (Ktor) sources; callers are insulated from the details
+- Repositories coordinate local (SQLDelight) and remote (Supabase) sources; callers are insulated from the details
 - Network DTOs are mapped at the data-layer boundary — they must not leak into domain or UI layers
 - Offline-first: local DB is the source of truth; network syncs to it
 
@@ -148,7 +145,8 @@ A standalone JVM application (not multiplatform). Runs a lightweight Ktor server
 |---|---|
 | UI | Compose Multiplatform |
 | Async / State | Coroutines + Flow |
-| Networking | Ktor Client (shared) + Ktor Server |
+| Sync backend | Supabase (Auth + Postgres + Realtime) via supabase-kt |
+| HTTP transport | Ktor Client (CIO engine, used by supabase-kt) |
 | Local DB | SQLDelight |
 | DI | Koin (KMP-compatible) |
 | Desktop OS APIs | JNA |
@@ -194,13 +192,50 @@ ui/
 
 ---
 
-## Server
+## Sync Backend
 
-Lightweight Ktor server for session synchronization between Android and Desktop clients. Stateless where possible; sessions are owned locally and synced, not streamed live.
+Cross-device session sync is provided by a managed **Supabase** project (no
+self-hosted server). The live transport lives in `SupabaseTrackingClient`
+(`:shared/androidJvmMain`), which exposes a platform-agnostic `TrackingClient`
+interface to the rest of the app. Schema + RPCs are checked in at
+`supabase/migrations/` and applied via `supabase db push`.
 
-### Storage
+### Identity model
 
-In-memory only (e.g. `ConcurrentHashMap`). Clients are the sole persistent source of truth — the server holds transient sync state that is rebuilt on reconnect. No server-side database.
+- **Anonymous auth** — each install signs in anonymously on first run; the
+  `UserSession` is persisted via `AppStorageSessionManager` so `auth.uid()`
+  survives restarts.
+- **`accounts` abstraction** — `auth.users` is NOT what other devices see. An
+  `accounts` table represents "the thing devices sync to", joined via an
+  `account_members` table. Linking a new device means moving its membership
+  from its solo account to the target account.
+- **Linking codes** — short-lived 6-character codes (`ABCDEFGHJKMNPQRSTUVWXYZ23456789`,
+  unambiguous glyphs only) generated by `create_linking_code()` and consumed
+  by `redeem_linking_code(code)`. Both are `SECURITY DEFINER` Postgres functions;
+  the `linking_codes` table has RLS enabled with no policies (default-deny),
+  so clients can only reach it via the RPCs.
+
+### Data model
+
+- **One row per session** — `tracking_sessions` holds both the active session
+  and (in the future) completed history, disambiguated by `stopped_at_ms`.
+  A partial unique index enforces at most one active session per account.
+- **Pause-extension is client-computed** — `targetEndAtMs += (now - pausedAtMs)`
+  is calculated on the resuming client and written in a single UPDATE. This
+  preserves offline correctness: a device that resumed while disconnected
+  knows the real resume time; a DB-side `now()` computation would not.
+- **Reconciliation policy** is a pure function — `SessionReconciler.decide(local,
+  server, now)` — tested exhaustively in `SessionReconcilerTest`. The
+  `SupabaseTrackingClient.reconcile()` method is a thin shell that executes the
+  decision. Any change to the policy MUST update the test matrix in lockstep.
+
+### RLS
+
+Every table is gated on `account_members` membership via `auth.uid()`. All
+writes that touch invariants (`ensure_account`, `create_linking_code`,
+`redeem_linking_code`) go through `SECURITY DEFINER` RPCs so clients cannot
+bypass the rules. See `supabase/migrations/20260410000000_initial_schema.sql`
+for the authoritative definitions.
 
 ---
 

@@ -49,13 +49,13 @@ class MainActivity : ComponentActivity() {
     private fun showContent() {
         if (allPermissionsGranted(this)) {
             initSessionIfNeeded()
-            setContent { App() }
+            setContent { App(storage = AndroidAppStorage(filesDir)) }
         } else {
             setContent {
                 PermissionsOnboardingScreen(
                     onAllGranted = {
                         initSessionIfNeeded()
-                        setContent { App() }
+                        setContent { App(storage = AndroidAppStorage(filesDir)) }
                     },
                 )
             }

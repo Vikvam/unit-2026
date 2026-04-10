@@ -43,8 +43,8 @@ val LocalReportStateHolder = compositionLocalOf<ReportStateHolder> {
 }
 
 @Composable
-fun App() {
-    val client = remember { createTrackingClient() }
+fun App(storage: AppStorage = NoOpAppStorage) {
+    val client = remember(storage) { createTrackingClient(storage) }
     val scope = rememberCoroutineScope()
     val timerStateHolder = remember(client, scope) { TimerStateHolder(client, scope) }
     val reportStateHolder = remember(client, scope) { ReportStateHolder(client, scope) }

@@ -44,7 +44,7 @@ fun main() {
             onCloseRequest = ::exitApplication,
             title = "OpenJetTracks",
         ) {
-            App()
+            App(storage = storage)
         }
 
         if (blocked != null) {

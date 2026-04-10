@@ -17,3 +17,8 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# Supabase CLI local state (project ref cache, branch metadata). Only
+# supabase/migrations/ should be committed.
+supabase/.temp/
+supabase/.branches/
